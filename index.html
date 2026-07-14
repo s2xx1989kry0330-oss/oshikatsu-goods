@@ -1081,7 +1081,7 @@ async function callGeminiReceiptExtract(base64, mimeType){
 各要素は次の形式にしてください:
 {"name": "商品名をそのまま正確に書き写す。先頭に【〇〇】のような表記があれば、それも省略せずそのまま含めること", "qty": 個数（数値、不明なら1）, "price": 単価（数値・円、不明なら0）}
 商品が1つも読み取れない場合は空配列 [] を返してください。`;
-  const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:generateContent`;
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent`;
   const body = {
     contents: [{ parts: [ { text: prompt }, { inline_data: { mime_type: mimeType, data: base64 } } ] }]
   };
