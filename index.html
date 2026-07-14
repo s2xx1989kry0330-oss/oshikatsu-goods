@@ -1062,6 +1062,19 @@ function fileToBase64Raw(file){
     reader.readAsDataURL(file);
   });
 }
+// 503(モデル過負荷)エラー時に指数バックオフで自動リトライする
+async function fetchGeminiWithRetry(url, options, maxRetries = 3){
+  let lastRes;
+  for(let attempt = 0; attempt <= maxRetries; attempt++){
+    lastRes = await fetch(url, options);
+    if(lastRes.status !== 503) return lastRes; // 503以外は即返す（成功・他エラーとも）
+    if(attempt === maxRetries) return lastRes; // 最後まで失敗したら諦めて返す
+    const waitMs = 1000 * Math.pow(2, attempt); // 1s → 2s → 4s
+    await new Promise(r => setTimeout(r, waitMs));
+  }
+  return lastRes;
+}
+
 async function callGeminiReceiptExtract(base64, mimeType){
   const prompt = `この画像は推し活グッズの注文控え・購入履歴・領収書・コレクション管理アプリの一覧画面のいずれかです。写っている商品をすべて抽出してください。
 出力はJSON配列のみで、説明文やマークダウンのコードブロックは一切つけないでください。
@@ -1072,7 +1085,7 @@ async function callGeminiReceiptExtract(base64, mimeType){
   const body = {
     contents: [{ parts: [ { text: prompt }, { inline_data: { mime_type: mimeType, data: base64 } } ] }]
   };
-  const res = await fetch(url, { method:'POST', headers:{'Content-Type':'application/json', 'X-goog-api-key': GEMINI_API_KEY}, body: JSON.stringify(body) });
+  const res = await fetchGeminiWithRetry(url, { method:'POST', headers:{'Content-Type':'application/json', 'X-goog-api-key': GEMINI_API_KEY}, body: JSON.stringify(body) });
   if(!res.ok){ throw new Error('Gemini APIエラー (' + res.status + ')'); }
   const data = await res.json();
   let text = data?.candidates?.[0]?.content?.parts?.[0]?.text || '[]';
