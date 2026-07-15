@@ -679,6 +679,9 @@ function renderDetail(){
   else if(filter.sort==='qtyHigh') list = list.slice().sort((a,b)=>b.qty-a.qty);
   else if(filter.sort==='nameAsc') list = list.slice().sort((a,b)=>a.name.localeCompare(b.name,'ja'));
   else if(filter.sort==='nameDesc') list = list.slice().sort((a,b)=>b.name.localeCompare(a.name,'ja'));
+  else if(filter.sort==='seriesAsc') list = list.slice().sort((a,b)=>(a.series||'').localeCompare(b.series||'','ja'));
+  else if(filter.sort==='seriesDesc') list = list.slice().sort((a,b)=>(b.series||'').localeCompare(a.series||'','ja'));
+  else if(filter.sort==='oldest') list = list.slice().sort((a,b)=>(a.createdAt?.seconds||0)-(b.createdAt?.seconds||0));
 
   let html = `
     <div class="toolbar">
@@ -692,6 +695,9 @@ function renderDetail(){
           <option value="qtyHigh" ${filter.sort==='qtyHigh'?'selected':''}>個数多い順</option>
           <option value="nameAsc" ${filter.sort==='nameAsc'?'selected':''}>名前（あ→ん）</option>
           <option value="nameDesc" ${filter.sort==='nameDesc'?'selected':''}>名前（ん→あ）</option>
+          <option value="seriesAsc" ${filter.sort==='seriesAsc'?'selected':''}>シリーズ（あ→ん）</option>
+          <option value="seriesDesc" ${filter.sort==='seriesDesc'?'selected':''}>シリーズ（ん→あ）</option>
+          <option value="oldest" ${filter.sort==='oldest'?'selected':''}>登録の古い順</option>
         </select>
       </div>
       <div class="chiprow" id="chipRow">
