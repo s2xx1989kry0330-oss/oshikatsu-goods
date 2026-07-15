@@ -677,6 +677,8 @@ function renderDetail(){
   else if(filter.sort==='priceHigh') list = list.slice().sort((a,b)=>b.price-a.price);
   else if(filter.sort==='priceLow') list = list.slice().sort((a,b)=>a.price-b.price);
   else if(filter.sort==='qtyHigh') list = list.slice().sort((a,b)=>b.qty-a.qty);
+  else if(filter.sort==='nameAsc') list = list.slice().sort((a,b)=>a.name.localeCompare(b.name,'ja'));
+  else if(filter.sort==='nameDesc') list = list.slice().sort((a,b)=>b.name.localeCompare(a.name,'ja'));
 
   let html = `
     <div class="toolbar">
@@ -688,6 +690,8 @@ function renderDetail(){
           <option value="priceHigh" ${filter.sort==='priceHigh'?'selected':''}>価格高い順</option>
           <option value="priceLow" ${filter.sort==='priceLow'?'selected':''}>価格安い順</option>
           <option value="qtyHigh" ${filter.sort==='qtyHigh'?'selected':''}>個数多い順</option>
+          <option value="nameAsc" ${filter.sort==='nameAsc'?'selected':''}>名前（あ→ん）</option>
+          <option value="nameDesc" ${filter.sort==='nameDesc'?'selected':''}>名前（ん→あ）</option>
         </select>
       </div>
       <div class="chiprow" id="chipRow">
