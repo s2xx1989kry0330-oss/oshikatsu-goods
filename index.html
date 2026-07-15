@@ -156,20 +156,14 @@
   .btn.primary{background:var(--pink); color:#fff;}
   .btn.ghost{background:var(--card); border:1px solid var(--line); color:var(--ink);}
   .btn.danger{background:#FFE6E6; color:#C0392B;}
+  .icon-del-btn{width:36px; height:36px; border-radius:50%; border:1px solid #FFE6E6; background:#FFF5F5; color:#C0392B; font-size:16px; display:flex; align-items:center; justify-content:center; flex-shrink:0;}
   .hidden{display:none !important;}
   input[type=file]{display:none;}
   .modal-stepper{display:flex; align-items:center; gap:8px;}
   .modal-qty-btn{width:38px; height:38px; flex:none; border-radius:12px; border:1px solid var(--line); background:var(--pink-soft); color:var(--pink-deep); font-size:18px; font-weight:900; display:flex; align-items:center; justify-content:center;}
   .modal-qty-btn:active{background:var(--pink); color:#fff;}
   #itemQtyInput{text-align:center;}
-  .status-btn{flex:1; padding:11px; border-radius:12px; border:1px solid var(--line); background:var(--card); color:var(--ink-soft); font-size:13px; font-weight:700;}
-  .status-btn.active{background:var(--pink); color:#fff; border-color:var(--pink);}
   .item-status-tag{display:inline-block; font-size:10px; font-weight:700; padding:2px 8px; border-radius:999px; background:var(--gold-soft); color:var(--gold-ink); margin-bottom:6px; margin-left:4px;}
-  .graph-wrap{display:flex; align-items:flex-end; gap:6px; height:190px; overflow-x:auto; padding:10px 4px 6px; border-bottom:1px solid var(--line);}
-  .graph-bar-col{display:flex; flex-direction:column; align-items:center; gap:6px; flex:none; width:32px; justify-content:flex-end; height:100%;}
-  .graph-bar{width:18px; border-radius:6px 6px 0 0; background:var(--pink); min-height:2px;}
-  .graph-amt{font-size:8.5px; color:var(--ink-soft); font-weight:700; white-space:nowrap;}
-  .graph-label{font-size:10px; color:var(--ink-soft); font-weight:700;}
   .theme-grid{display:grid; grid-template-columns:repeat(2,1fr); gap:10px;}
   .theme-card{background:var(--card); border:2px solid var(--line); border-radius:16px; padding:10px; display:flex; flex-direction:column; align-items:center; gap:8px; font-size:12px; font-weight:700; color:var(--ink);}
   .theme-card.active{border-color:var(--pink);}
@@ -207,7 +201,6 @@
       <h1 id="pageTitle"><span class="pin"></span>推し活グッズ帳</h1>
       <div class="headerbtns">
         <span class="synctag"><span class="dot-live"></span>同期中</span>
-        <button class="menubtn" id="statsGraphBtn">📊</button>
         <button class="menubtn" id="backupOpenBtn">⋮</button>
       </div>
     </div>
@@ -257,7 +250,10 @@
 <!-- Item modal -->
 <div class="overlay" id="itemOverlay">
   <div class="sheet">
-    <h2 id="itemModalTitle">グッズを追加</h2>
+    <div style="display:flex; justify-content:space-between; align-items:center;">
+      <h2 id="itemModalTitle">グッズを追加</h2>
+      <button type="button" class="icon-del-btn hidden" id="itemDeleteBtn" aria-label="このグッズを削除">🗑</button>
+    </div>
     <div class="field">
       <label>商品画像（複数枚OK・任意）</label>
       <div class="multi-img-row" id="itemImgRow"></div>
@@ -294,38 +290,12 @@
       </div>
     </div>
     <div class="field">
-      <label>ステータス</label>
-      <div class="modal-stepper" id="statusToggle">
-        <button type="button" class="status-btn" data-status="opened">開封済み</button>
-        <button type="button" class="status-btn" data-status="unopened">未開封</button>
-      </div>
-    </div>
-    <div class="field" style="display:flex; gap:10px;">
-      <div style="flex:1;">
-        <label>購入イベント（任意）</label>
-        <input type="text" id="itemEventInput" list="eventList" placeholder="例）〇〇即売会">
-        <datalist id="eventList"></datalist>
-      </div>
-      <div style="flex:1;">
-        <label>購入場所（任意）</label>
-        <input type="text" id="itemLocationInput" list="locationList" placeholder="例）にじさんじストア">
-        <datalist id="locationList"></datalist>
-      </div>
-    </div>
-    <div class="field">
-      <label>購入日（任意）</label>
-      <input type="date" id="itemDateInput">
-    </div>
-    <div class="field">
       <label>メモ（任意）</label>
       <textarea id="itemMemoInput" placeholder="状態やその他メモ"></textarea>
     </div>
     <div class="sheet-actions">
       <button class="btn ghost" id="itemCancelBtn">キャンセル</button>
       <button class="btn primary" id="itemSaveBtn">保存する</button>
-    </div>
-    <div class="sheet-actions" id="itemDeleteRow" style="margin-top:4px;">
-      <button class="btn danger" id="itemDeleteBtn">このグッズを削除</button>
     </div>
   </div>
 </div>
@@ -353,17 +323,6 @@
     <div class="sheet-actions" style="margin-top:16px;">
       <button class="btn ghost" id="signOutBtn">ログアウト</button>
       <button class="btn primary" id="backupCloseBtn">閉じる</button>
-    </div>
-  </div>
-</div>
-
-<!-- Spending graph overlay -->
-<div class="overlay" id="statsOverlay">
-  <div class="sheet">
-    <h2 id="statsGraphTitle">支出の推移</h2>
-    <div id="statsGraphBody"></div>
-    <div class="sheet-actions">
-      <button class="btn ghost" id="statsGraphCloseBtn">閉じる</button>
     </div>
   </div>
 </div>
@@ -718,7 +677,6 @@ function renderDetail(){
   else if(filter.sort==='priceHigh') list = list.slice().sort((a,b)=>b.price-a.price);
   else if(filter.sort==='priceLow') list = list.slice().sort((a,b)=>a.price-b.price);
   else if(filter.sort==='qtyHigh') list = list.slice().sort((a,b)=>b.qty-a.qty);
-  else if(filter.sort==='dateNew') list = list.slice().sort((a,b)=>(b.date||'').localeCompare(a.date||''));
 
   let html = `
     <div class="toolbar">
@@ -727,7 +685,6 @@ function renderDetail(){
         <input class="searchbox" id="searchInput" placeholder="商品名で検索" value="${filter.q}">
         <select class="sortselect" id="sortSelect">
           <option value="new" ${filter.sort==='new'?'selected':''}>新しい順</option>
-          <option value="dateNew" ${filter.sort==='dateNew'?'selected':''}>購入日順</option>
           <option value="priceHigh" ${filter.sort==='priceHigh'?'selected':''}>価格高い順</option>
           <option value="priceLow" ${filter.sort==='priceLow'?'selected':''}>価格安い順</option>
           <option value="qtyHigh" ${filter.sort==='qtyHigh'?'selected':''}>個数多い順</option>
@@ -753,7 +710,6 @@ function renderDetail(){
           <div class="item-body">
             ${i.category ? `<span class="item-cat">${i.category}</span>` : ''}
             ${i.series ? `<span class="item-cat" style="background:var(--pink-soft); color:var(--pink-deep);">${i.series}</span>` : ''}
-            ${i.status==='unopened' ? `<span class="item-status-tag">未開封</span>` : ''}
             <div class="item-name">${i.name}</div>
             <div class="item-price-row">
               <span class="item-price">${fmtYen(i.price)}</span>
@@ -855,7 +811,6 @@ document.getElementById('charCancelBtn').onclick = ()=>closeModal('charOverlay')
 
 /* ---------------- Item modal ---------------- */
 let itemImgTemp = [];
-let itemStatusTemp = 'opened';
 function getItemImages(it){
   if(it.images && it.images.length) return it.images;
   if(it.image) return [it.image];
@@ -870,31 +825,18 @@ function openItemModal(id){
   document.getElementById('itemCatInput').value = it ? (it.category||'') : '';
   document.getElementById('itemPriceInput').value = it ? it.price : '';
   document.getElementById('itemQtyInput').value = it ? it.qty : 1;
-  document.getElementById('itemDateInput').value = it ? (it.date||'') : '';
   document.getElementById('itemMemoInput').value = it ? (it.memo||'') : '';
-  document.getElementById('itemEventInput').value = it ? (it.eventName||'') : '';
-  document.getElementById('itemLocationInput').value = it ? (it.location||'') : '';
   itemImgTemp = it ? getItemImages(it).slice() : [];
   updateItemImgPick();
   document.getElementById('nameSuggestRow').classList.add('hidden');
   document.getElementById('nameSuggestRow').innerHTML = '';
-
-  itemStatusTemp = it ? (it.status || 'opened') : 'opened';
-  const statusBtns = document.querySelectorAll('#statusToggle .status-btn');
-  function markStatus(){ statusBtns.forEach(b=>b.classList.toggle('active', b.dataset.status===itemStatusTemp)); }
-  markStatus();
-  statusBtns.forEach(b=>{ b.onclick = ()=>{ itemStatusTemp = b.dataset.status; markStatus(); }; });
 
   const usedCats = Array.from(new Set(state.items.map(i=>i.category).filter(Boolean)));
   const allCats = Array.from(new Set([...CATEGORY_LIST, ...usedCats]));
   document.getElementById('catList').innerHTML = allCats.map(c=>`<option value="${c}">`).join('');
   const usedSeries = Array.from(new Set(state.items.map(i=>i.series).filter(Boolean)));
   document.getElementById('seriesList').innerHTML = usedSeries.map(s=>`<option value="${s}">`).join('');
-  const usedEvents = Array.from(new Set(state.items.map(i=>i.eventName).filter(Boolean)));
-  document.getElementById('eventList').innerHTML = usedEvents.map(s=>`<option value="${s}">`).join('');
-  const usedLocations = Array.from(new Set(state.items.map(i=>i.location).filter(Boolean)));
-  document.getElementById('locationList').innerHTML = usedLocations.map(s=>`<option value="${s}">`).join('');
-  document.getElementById('itemDeleteRow').classList.toggle('hidden', !it);
+  document.getElementById('itemDeleteBtn').classList.toggle('hidden', !it);
 
   const searchBtn = document.getElementById('searchSiteBtn');
   if(ch && ch.shopUrl){
@@ -924,11 +866,7 @@ function openItemModal(id){
     const category = document.getElementById('itemCatInput').value.trim();
     const price = Number(document.getElementById('itemPriceInput').value)||0;
     const qty = Number(document.getElementById('itemQtyInput').value)||1;
-    const date = document.getElementById('itemDateInput').value;
     const memo = document.getElementById('itemMemoInput').value.trim();
-    const eventName = document.getElementById('itemEventInput').value.trim();
-    const location = document.getElementById('itemLocationInput').value.trim();
-    const status = itemStatusTemp;
     if(totalImageBytes(itemImgTemp) > MAX_IMAGE_BYTES){
       showToast('画像の合計サイズが大きすぎるよ。枚数を減らしてね');
       return;
@@ -937,9 +875,9 @@ function openItemModal(id){
     try{
       const images = itemImgTemp;
       if(it){
-        await updateDoc(doc(db,'users',uid,'items',it.id), { name, series, category, price, qty, date, memo, eventName, location, status, images, image: images[0]||null });
+        await updateDoc(doc(db,'users',uid,'items',it.id), { name, series, category, price, qty, memo, images, image: images[0]||null });
       } else {
-        await addDoc(collection(db,'users',uid,'items'), { characterId: view.characterId, name, series, category, price, qty, date, memo, eventName, location, status, images, image: images[0]||null, createdAt: serverTimestamp() });
+        await addDoc(collection(db,'users',uid,'items'), { characterId: view.characterId, name, series, category, price, qty, memo, images, image: images[0]||null, createdAt: serverTimestamp() });
       }
       closeModal('itemOverlay'); showToast('保存したよ');
     }catch(e){ showToast('保存に失敗: ' + e.message); }
@@ -1062,12 +1000,12 @@ function fileToBase64Raw(file){
     reader.readAsDataURL(file);
   });
 }
-// 503(モデル過負荷)エラー時に指数バックオフで自動リトライする
+// 503(モデル過負荷)・429(レート制限)エラー時に指数バックオフで自動リトライする
 async function fetchGeminiWithRetry(url, options, maxRetries = 3){
   let lastRes;
   for(let attempt = 0; attempt <= maxRetries; attempt++){
     lastRes = await fetch(url, options);
-    if(lastRes.status !== 503) return lastRes; // 503以外は即返す（成功・他エラーとも）
+    if(lastRes.status !== 503 && lastRes.status !== 429) return lastRes; // 503/429以外は即返す（成功・他エラーとも）
     if(attempt === maxRetries) return lastRes; // 最後まで失敗したら諦めて返す
     const waitMs = 1000 * Math.pow(2, attempt); // 1s → 2s → 4s
     await new Promise(r => setTimeout(r, waitMs));
@@ -1086,7 +1024,11 @@ async function callGeminiReceiptExtract(base64, mimeType){
     contents: [{ parts: [ { text: prompt }, { inline_data: { mime_type: mimeType, data: base64 } } ] }]
   };
   const res = await fetchGeminiWithRetry(url, { method:'POST', headers:{'Content-Type':'application/json', 'X-goog-api-key': GEMINI_API_KEY}, body: JSON.stringify(body) });
-  if(!res.ok){ throw new Error('Gemini APIエラー (' + res.status + ')'); }
+  if(!res.ok){
+    const reasons = { 429: 'レート制限に達した', 503: 'サーバー混雑中', 404: 'モデルが見つからない', 400: 'リクエスト不正' };
+    const reason = reasons[res.status] || '不明なエラー';
+    throw new Error(`Gemini APIエラー ${res.status}（${reason}）`);
+  }
   const data = await res.json();
   let text = data?.candidates?.[0]?.content?.parts?.[0]?.text || '[]';
   text = text.trim().replace(/^```json/i,'').replace(/^```/,'').replace(/```$/,'').trim();
@@ -1138,7 +1080,7 @@ function runScanConfirmFlow(items){
   async function addOne(data){
     await addDoc(collection(db,'users',uid,'items'), {
       characterId: view.characterId, name: data.name, series: data.series||'', category: data.category||'',
-      price: data.price||0, qty: data.qty||1, date:'', memo:'', eventName:'', location:'', status:'opened',
+      price: data.price||0, qty: data.qty||1, memo:'',
       images:[], image:null, createdAt: serverTimestamp()
     });
     addedCount++;
@@ -1235,47 +1177,6 @@ function renderThemeGrid(){
 }
 document.getElementById('backupOpenBtn').onclick = ()=>{ renderThemeGrid(); openModal('backupOverlay'); };
 
-/* ---------------- Spending graph ---------------- */
-function computeMonthlySpending(items){
-  const map = {};
-  items.forEach(i=>{
-    const key = i.date ? i.date.slice(0,7) : 'nodate';
-    const amt = Number(i.price||0)*Number(i.qty||0);
-    map[key] = (map[key]||0) + amt;
-  });
-  return map;
-}
-function renderStatsGraph(){
-  const inDetail = view.screen==='detail';
-  const items = inDetail ? state.items.filter(i=>i.characterId===view.characterId) : state.items;
-  const map = computeMonthlySpending(items);
-  const now = new Date();
-  const months = [];
-  for(let i=11;i>=0;i--){
-    const d = new Date(now.getFullYear(), now.getMonth()-i, 1);
-    const key = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`;
-    months.push({ label: `${d.getMonth()+1}月`, value: map[key]||0 });
-  }
-  const noDateVal = map['nodate']||0;
-  const maxVal = Math.max(1, ...months.map(m=>m.value), noDateVal);
-  const total = months.reduce((s,m)=>s+m.value,0) + noDateVal;
-
-  let html = `<p style="font-size:13px; font-weight:700; margin:0 0 10px;">直近12ヶ月の合計：${fmtYen(total)}</p><div class="graph-wrap">`;
-  months.forEach(m=>{
-    const h = Math.round((m.value/maxVal)*140);
-    html += `<div class="graph-bar-col"><div class="graph-amt">${m.value>0?fmtYen(m.value):''}</div><div class="graph-bar" style="height:${Math.max(h,2)}px;"></div><div class="graph-label">${m.label}</div></div>`;
-  });
-  if(noDateVal>0){
-    const h = Math.round((noDateVal/maxVal)*140);
-    html += `<div class="graph-bar-col"><div class="graph-amt">${fmtYen(noDateVal)}</div><div class="graph-bar" style="height:${Math.max(h,2)}px; background:var(--ink-soft);"></div><div class="graph-label">日付なし</div></div>`;
-  }
-  html += `</div>`;
-  const ch = inDetail ? state.characters.find(c=>c.id===view.characterId) : null;
-  document.getElementById('statsGraphTitle').textContent = inDetail ? `支出の推移（${ch?ch.name:''}）` : '支出の推移（全体）';
-  document.getElementById('statsGraphBody').innerHTML = html;
-}
-document.getElementById('statsGraphBtn').onclick = ()=>{ renderStatsGraph(); openModal('statsOverlay'); };
-document.getElementById('statsGraphCloseBtn').onclick = ()=>closeModal('statsOverlay');
 document.getElementById('backupCloseBtn').onclick = ()=>closeModal('backupOverlay');
 
 /* ---------------- Manual JSON export (extra safety net) ---------------- */
