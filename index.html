@@ -677,6 +677,7 @@ function renderDetail(){
   else if(filter.sort==='priceHigh') list = list.slice().sort((a,b)=>b.price-a.price);
   else if(filter.sort==='priceLow') list = list.slice().sort((a,b)=>a.price-b.price);
   else if(filter.sort==='qtyHigh') list = list.slice().sort((a,b)=>b.qty-a.qty);
+  else if(filter.sort==='qtyLow') list = list.slice().sort((a,b)=>a.qty-b.qty);
   else if(filter.sort==='nameAsc') list = list.slice().sort((a,b)=>a.name.localeCompare(b.name,'ja'));
   else if(filter.sort==='nameDesc') list = list.slice().sort((a,b)=>b.name.localeCompare(a.name,'ja'));
   else if(filter.sort==='seriesAsc') list = list.slice().sort((a,b)=>(a.series||'').localeCompare(b.series||'','ja'));
@@ -690,14 +691,15 @@ function renderDetail(){
         <input class="searchbox" id="searchInput" placeholder="商品名で検索" value="${filter.q}">
         <select class="sortselect" id="sortSelect">
           <option value="new" ${filter.sort==='new'?'selected':''}>新しい順</option>
+          <option value="oldest" ${filter.sort==='oldest'?'selected':''}>登録の古い順</option>
+          <option value="qtyHigh" ${filter.sort==='qtyHigh'?'selected':''}>個数多い順</option>
+          <option value="qtyLow" ${filter.sort==='qtyLow'?'selected':''}>個数少ない順</option>
           <option value="priceHigh" ${filter.sort==='priceHigh'?'selected':''}>価格高い順</option>
           <option value="priceLow" ${filter.sort==='priceLow'?'selected':''}>価格安い順</option>
-          <option value="qtyHigh" ${filter.sort==='qtyHigh'?'selected':''}>個数多い順</option>
           <option value="nameAsc" ${filter.sort==='nameAsc'?'selected':''}>名前（あ→ん）</option>
           <option value="nameDesc" ${filter.sort==='nameDesc'?'selected':''}>名前（ん→あ）</option>
           <option value="seriesAsc" ${filter.sort==='seriesAsc'?'selected':''}>シリーズ（あ→ん）</option>
           <option value="seriesDesc" ${filter.sort==='seriesDesc'?'selected':''}>シリーズ（ん→あ）</option>
-          <option value="oldest" ${filter.sort==='oldest'?'selected':''}>登録の古い順</option>
         </select>
       </div>
       <div class="chiprow" id="chipRow">
