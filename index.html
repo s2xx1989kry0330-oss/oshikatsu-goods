@@ -106,7 +106,8 @@
   .toolbar{display:flex; flex-direction:column; gap:10px; margin-bottom:14px;}
   .searchrow{display:flex; gap:8px;}
   .searchbox{flex:1; background:var(--card); border:1px solid var(--line); border-radius:14px; padding:10px 14px; font-size:16px; box-shadow:var(--shadow); color:var(--ink);}
-  .sortselect{background:var(--card); border:1px solid var(--line); border-radius:14px; padding:10px 10px; font-size:16px; box-shadow:var(--shadow); font-weight:700; color:var(--ink);}
+  .sortselect{background:var(--card) url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="%238a7f92"><path d="M7 10l5 5 5-5z"/></svg>') no-repeat right 10px center/16px; background-color:var(--card); border:1px solid var(--line); border-radius:14px; padding:10px 30px 10px 10px; font-size:16px; box-shadow:var(--shadow); font-weight:700; color:var(--ink); -webkit-appearance:none; appearance:none; outline:none;}
+  .sortselect:focus{border-color:var(--pink); outline:none;}
 
   .item-grid{display:grid; grid-template-columns: 1fr 1fr; gap:14px; margin-top:4px;}
   .item-card{background:var(--card); border-radius:var(--radius); box-shadow:var(--shadow); overflow:hidden; border:1px solid var(--line); display:flex; flex-direction:column; text-align:left; position:relative;}
@@ -657,6 +658,12 @@ async function persistCharacterOrder(){
   }catch(e){ showToast('並び順の保存に失敗: ' + e.message); }
 }
 
+function countByKeyDesc(items, key){
+  const counts = {};
+  items.forEach(i=>{ const v = i[key]; if(v) counts[v] = (counts[v]||0) + 1; });
+  return Object.keys(counts).sort((a,b)=> counts[b]-counts[a] || a.localeCompare(b,'ja'));
+}
+
 function getFilteredSortedItems(chItems){
   let list = chItems.filter(i=>{
     const matchQ = !filter.q || i.name.toLowerCase().includes(filter.q.toLowerCase());
@@ -715,8 +722,8 @@ function renderDetail(){
   const main = document.getElementById('mainArea');
   const ch = state.characters.find(c=>c.id===view.characterId);
   const chItems = state.items.filter(i=>i.characterId===view.characterId);
-  const categories = ['ALL', ...Array.from(new Set(chItems.map(i=>i.category).filter(Boolean)))];
-  const seriesList = ['ALL', ...Array.from(new Set(chItems.map(i=>i.series).filter(Boolean)))];
+  const categories = ['ALL', ...countByKeyDesc(chItems, 'category')];
+  const seriesList = ['ALL', ...countByKeyDesc(chItems, 'series')];
   const list = getFilteredSortedItems(chItems);
 
   let html = `
