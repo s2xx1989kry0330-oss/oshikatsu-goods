@@ -105,11 +105,8 @@
 
   .toolbar{display:flex; flex-direction:column; gap:10px; margin-bottom:14px;}
   .searchrow{display:flex; gap:8px;}
-  .searchbox{flex:1; background:var(--card); border:1px solid var(--line); border-radius:14px; padding:10px 14px; font-size:14px; box-shadow:var(--shadow); color:var(--ink);}
-  .sortselect{background:var(--card); border:1px solid var(--line); border-radius:14px; padding:10px 10px; font-size:13px; box-shadow:var(--shadow); font-weight:700; color:var(--ink);}
-  .chiprow{display:flex; gap:8px; overflow-x:auto; padding-bottom:2px;}
-  .chip{flex:none; padding:7px 14px; border-radius:999px; font-size:12.5px; font-weight:700; background:var(--card); border:1px solid var(--line); color:var(--ink-soft); white-space:nowrap;}
-  .chip.active{background:var(--pink); color:#fff; border-color:var(--pink);}
+  .searchbox{flex:1; background:var(--card); border:1px solid var(--line); border-radius:14px; padding:10px 14px; font-size:16px; box-shadow:var(--shadow); color:var(--ink);}
+  .sortselect{background:var(--card); border:1px solid var(--line); border-radius:14px; padding:10px 10px; font-size:16px; box-shadow:var(--shadow); font-weight:700; color:var(--ink);}
 
   .item-grid{display:grid; grid-template-columns: 1fr 1fr; gap:14px; margin-top:4px;}
   .item-card{background:var(--card); border-radius:var(--radius); box-shadow:var(--shadow); overflow:hidden; border:1px solid var(--line); display:flex; flex-direction:column; text-align:left; position:relative;}
@@ -135,7 +132,7 @@
   .sheet h2{font-size:19px; margin:0 0 16px;}
   .field{margin-bottom:14px;}
   .field label{display:block; font-size:12px; font-weight:700; color:var(--ink-soft); margin-bottom:6px;}
-  .field input[type=text], .field input[type=number], .field input[type=date], .field select, .field textarea{width:100%; padding:11px 14px; border-radius:14px; border:1px solid var(--line); background:var(--card); font-size:14px; color:var(--ink);}
+  .field input[type=text], .field input[type=number], .field input[type=date], .field select, .field textarea{width:100%; padding:11px 14px; border-radius:14px; border:1px solid var(--line); background:var(--card); font-size:16px; color:var(--ink);}
   .field textarea{resize:vertical; min-height:60px;}
   .imgpick{width:100%; aspect-ratio:1.6/1; border-radius:16px; border:2px dashed var(--line); background:var(--card); display:flex; flex-direction:column; align-items:center; justify-content:center; color:var(--ink-soft); font-size:13px; gap:6px; overflow:hidden; position:relative;}
   .imgpick img{position:absolute; inset:0; width:100%; height:100%; object-fit:cover;}
@@ -150,7 +147,7 @@
   .colordot.sel{border-color:var(--ink);}
   .hexrow{display:flex; align-items:center; gap:10px; margin-top:10px;}
   .hexpreview{width:34px; height:34px; border-radius:50%; border:2px solid var(--line); flex:none;}
-  .hexrow input{flex:1; padding:10px 12px; border-radius:12px; border:1px solid var(--line); background:var(--card); font-size:13px; color:var(--ink); text-transform:uppercase;}
+  .hexrow input{flex:1; padding:10px 12px; border-radius:12px; border:1px solid var(--line); background:var(--card); font-size:16px; color:var(--ink); text-transform:uppercase;}
   .sheet-actions{display:flex; gap:10px; margin-top:8px;}
   .btn{flex:1; padding:13px; border-radius:14px; border:none; font-weight:700; font-size:14px;}
   .btn.primary{background:var(--pink); color:#fff;}
@@ -660,13 +657,7 @@ async function persistCharacterOrder(){
   }catch(e){ showToast('並び順の保存に失敗: ' + e.message); }
 }
 
-function renderDetail(){
-  const main = document.getElementById('mainArea');
-  const ch = state.characters.find(c=>c.id===view.characterId);
-  const chItems = state.items.filter(i=>i.characterId===view.characterId);
-  const categories = ['ALL', ...Array.from(new Set(chItems.map(i=>i.category).filter(Boolean)))];
-  const seriesList = ['ALL', ...Array.from(new Set(chItems.map(i=>i.series).filter(Boolean)))];
-
+function getFilteredSortedItems(chItems){
   let list = chItems.filter(i=>{
     const matchQ = !filter.q || i.name.toLowerCase().includes(filter.q.toLowerCase());
     const matchCat = filter.category==='ALL' || i.category===filter.category;
@@ -683,6 +674,50 @@ function renderDetail(){
   else if(filter.sort==='seriesAsc') list = list.slice().sort((a,b)=>(a.series||'').localeCompare(b.series||'','ja'));
   else if(filter.sort==='seriesDesc') list = list.slice().sort((a,b)=>(b.series||'').localeCompare(a.series||'','ja'));
   else if(filter.sort==='oldest') list = list.slice().sort((a,b)=>(a.createdAt?.seconds||0)-(b.createdAt?.seconds||0));
+  return list;
+}
+
+function renderItemGridHtml(list){
+  if(list.length===0){
+    return `<div class="empty"><div class="display">グッズがまだないよ</div><div>右下の＋から追加してね</div></div>`;
+  }
+  let html = '<div class="item-grid">';
+  list.forEach(i=>{
+    html += `
+      <div class="item-card" data-edit="${i.id}">
+        <div class="item-img">${(()=>{ const imgs=getItemImages(i); return imgs.length ? `<img src="${imgs[0]}">${imgs.length>1?`<span class="item-img-badge">+${imgs.length-1}</span>`:''}` : '🎀'; })()}</div>
+        <div class="item-body">
+          ${i.category ? `<span class="item-cat">${i.category}</span>` : ''}
+          ${i.series ? `<span class="item-cat" style="background:var(--pink-soft); color:var(--pink-deep);">${i.series}</span>` : ''}
+          <div class="item-name">${i.name}</div>
+          <div class="item-price-row">
+            <span class="item-price">${fmtYen(i.price)}</span>
+            <span class="item-qty">×${i.qty}</span>
+          </div>
+          <div class="item-sub">小計 ${fmtYen(Number(i.price||0)*Number(i.qty||0))}</div>
+        </div>
+      </div>`;
+  });
+  html += '</div>';
+  return html;
+}
+
+function updateItemGrid(){
+  const chItems = state.items.filter(i=>i.characterId===view.characterId);
+  const list = getFilteredSortedItems(chItems);
+  const gridArea = document.getElementById('itemGridArea');
+  if(!gridArea) return;
+  gridArea.innerHTML = renderItemGridHtml(list);
+  gridArea.querySelectorAll('[data-edit]').forEach(card=>{ card.onclick = ()=>openItemModal(card.dataset.edit); });
+}
+
+function renderDetail(){
+  const main = document.getElementById('mainArea');
+  const ch = state.characters.find(c=>c.id===view.characterId);
+  const chItems = state.items.filter(i=>i.characterId===view.characterId);
+  const categories = ['ALL', ...Array.from(new Set(chItems.map(i=>i.category).filter(Boolean)))];
+  const seriesList = ['ALL', ...Array.from(new Set(chItems.map(i=>i.series).filter(Boolean)))];
+  const list = getFilteredSortedItems(chItems);
 
   let html = `
     <div class="toolbar">
@@ -702,45 +737,25 @@ function renderDetail(){
           <option value="seriesDesc" ${filter.sort==='seriesDesc'?'selected':''}>シリーズ（ん→あ）</option>
         </select>
       </div>
-      <div class="chiprow" id="chipRow">
-        ${categories.map(c=>`<button class="chip ${filter.category===c?'active':''}" data-cat="${c}">${c==='ALL'?'すべてのカテゴリ':c}</button>`).join('')}
+      <div class="filterrow" style="display:flex; gap:8px;">
+        <select class="sortselect" id="catSelect" style="flex:1;">
+          ${categories.map(c=>`<option value="${c}" ${filter.category===c?'selected':''}>${c==='ALL'?'すべてのカテゴリ':c}</option>`).join('')}
+        </select>
+        ${seriesList.length>1 ? `<select class="sortselect" id="seriesSelect" style="flex:1;">
+          ${seriesList.map(s=>`<option value="${s}" ${filter.series===s?'selected':''}>${s==='ALL'?'すべてのシリーズ':s}</option>`).join('')}
+        </select>` : ''}
       </div>
-      ${seriesList.length>1 ? `<div class="chiprow" id="seriesRow">
-        ${seriesList.map(s=>`<button class="chip ${filter.series===s?'active':''}" data-series="${s}">${s==='ALL'?'すべてのシリーズ':s}</button>`).join('')}
-      </div>` : ''}
     </div>
+    <div id="itemGridArea">${renderItemGridHtml(list)}</div>
   `;
 
-  if(list.length===0){
-    html += `<div class="empty"><div class="display">グッズがまだないよ</div><div>右下の＋から追加してね</div></div>`;
-  } else {
-    html += '<div class="item-grid">';
-    list.forEach(i=>{
-      html += `
-        <div class="item-card" data-edit="${i.id}">
-          <div class="item-img">${(()=>{ const imgs=getItemImages(i); return imgs.length ? `<img src="${imgs[0]}">${imgs.length>1?`<span class="item-img-badge">+${imgs.length-1}</span>`:''}` : '🎀'; })()}</div>
-          <div class="item-body">
-            ${i.category ? `<span class="item-cat">${i.category}</span>` : ''}
-            ${i.series ? `<span class="item-cat" style="background:var(--pink-soft); color:var(--pink-deep);">${i.series}</span>` : ''}
-            <div class="item-name">${i.name}</div>
-            <div class="item-price-row">
-              <span class="item-price">${fmtYen(i.price)}</span>
-              <span class="item-qty">×${i.qty}</span>
-            </div>
-            <div class="item-sub">小計 ${fmtYen(Number(i.price||0)*Number(i.qty||0))}</div>
-          </div>
-        </div>`;
-    });
-    html += '</div>';
-  }
-
   main.innerHTML = html;
-  document.getElementById('searchInput').oninput = (e)=>{ filter.q = e.target.value; renderDetail(); };
-  document.getElementById('sortSelect').onchange = (e)=>{ filter.sort = e.target.value; renderDetail(); };
-  main.querySelectorAll('[data-cat]').forEach(b=>{ b.onclick = ()=>{ filter.category = b.dataset.cat; renderDetail(); }; });
-  const sRow = document.getElementById('seriesRow');
-  if(sRow) sRow.querySelectorAll('[data-series]').forEach(b=>{ b.onclick = ()=>{ filter.series = b.dataset.series; renderDetail(); }; });
-  main.querySelectorAll('[data-edit]').forEach(card=>{ card.onclick = ()=>openItemModal(card.dataset.edit); });
+  document.getElementById('searchInput').oninput = (e)=>{ filter.q = e.target.value; updateItemGrid(); };
+  document.getElementById('sortSelect').onchange = (e)=>{ filter.sort = e.target.value; updateItemGrid(); };
+  document.getElementById('catSelect').onchange = (e)=>{ filter.category = e.target.value; updateItemGrid(); };
+  const seriesSelect = document.getElementById('seriesSelect');
+  if(seriesSelect) seriesSelect.onchange = (e)=>{ filter.series = e.target.value; updateItemGrid(); };
+  document.getElementById('itemGridArea').querySelectorAll('[data-edit]').forEach(card=>{ card.onclick = ()=>openItemModal(card.dataset.edit); });
   document.getElementById('scanBtn').onclick = ()=>{
     if(!GEMINI_API_KEY){ showToast('Gemini APIキーが設定されてないよ'); return; }
     document.getElementById('scanFileInput').click();
