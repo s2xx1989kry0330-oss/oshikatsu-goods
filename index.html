@@ -747,11 +747,11 @@ function renderDetail(){
           <option value="seriesDesc" ${filter.sort==='seriesDesc'?'selected':''}>シリーズ（ん→あ）</option>
         </select>
       </div>
-      <div class="filterrow" style="display:flex; gap:8px;">
-        <select class="sortselect" id="catSelect" style="flex:1;">
+      <div class="filterrow" style="display:flex; gap:8px; min-width:0;">
+        <select class="sortselect" id="catSelect" style="flex:1; min-width:0;">
           ${categories.map(c=>`<option value="${c}" ${filter.category===c?'selected':''}>${c==='ALL'?'すべてのカテゴリ':c}</option>`).join('')}
         </select>
-        ${seriesList.length>1 ? `<select class="sortselect" id="seriesSelect" style="flex:1;">
+        ${seriesList.length>1 ? `<select class="sortselect" id="seriesSelect" style="flex:0 1 auto; width:auto; max-width:55%; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">
           ${seriesList.map(s=>`<option value="${s}" ${filter.series===s?'selected':''}>${s==='ALL'?'すべてのシリーズ':s}</option>`).join('')}
         </select>` : ''}
       </div>
