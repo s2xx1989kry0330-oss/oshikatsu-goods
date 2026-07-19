@@ -669,7 +669,8 @@ function countByKeyDesc(items, key){
 
 function getFilteredSortedItems(chItems){
   let list = chItems.filter(i=>{
-    const matchQ = !filter.q || i.name.toLowerCase().includes(filter.q.toLowerCase());
+    const q = filter.q.toLowerCase();
+    const matchQ = !filter.q || i.name.toLowerCase().includes(q) || (i.series||'').toLowerCase().includes(q);
     const matchCat = filter.category==='ALL' || i.category===filter.category;
     const matchSeries = filter.series==='ALL' || i.series===filter.series;
     return matchQ && matchCat && matchSeries;
@@ -733,7 +734,7 @@ function renderDetail(){
     <div class="toolbar">
       <button class="scanbtn" id="scanBtn" ${GEMINI_API_KEY ? '' : 'disabled'}>📷 レシート・注文控えから追加</button>
       <div class="searchrow">
-        <input class="searchbox" id="searchInput" placeholder="商品名で検索" value="${filter.q}">
+        <input class="searchbox" id="searchInput" placeholder="商品名・シリーズ名で検索" value="${filter.q}">
         <select class="sortselect" id="sortSelect">
           <option value="new" ${filter.sort==='new'?'selected':''}>新しい順</option>
           <option value="oldest" ${filter.sort==='oldest'?'selected':''}>登録の古い順</option>
