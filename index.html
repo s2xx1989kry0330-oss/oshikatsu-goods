@@ -291,6 +291,10 @@
       </div>
     </div>
     <div class="field">
+      <label>発売年（任意）</label>
+      <input type="number" id="itemYearInput" placeholder="例）2023" inputmode="numeric" min="2000" max="2100">
+    </div>
+    <div class="field">
       <label>メモ（任意）</label>
       <textarea id="itemMemoInput" placeholder="状態やその他メモ"></textarea>
     </div>
@@ -320,6 +324,12 @@
     </div>
     <p style="font-size:11.5px; color:var(--ink-soft); line-height:1.5;">
       シリーズ・カテゴリが空欄のグッズだけ、商品名の【】やキーワードから補完するよ。すでに入力済みの項目は上書きしません。
+    </p>
+    <div class="backupbar">
+      <button class="backupbtn" id="fillYearBtn">📅 イブラヒムの発売年を自動入力</button>
+    </div>
+    <p style="font-size:11.5px; color:var(--ink-soft); line-height:1.5;">
+      イブラヒムのグッズのうち、発売年が空欄でシリーズ名が登録済みのものだけ、シリーズ名から発売年を推測して入力するよ。すでに入力済みのものは上書きしません。
     </p>
     <div class="sheet-actions" style="margin-top:16px;">
       <button class="btn ghost" id="signOutBtn">ログアウト</button>
@@ -393,9 +403,54 @@ const CATEGORY_LIST = [
   '文具','クリアファイル','マグカップ','トートバッグ','ポーチ','アパレル','CD・ボイス収録物'
 ];
 
+/* イブラヒムの撮り下ろしビジュアル使用グッズ・企画名 → 発売年（シリーズ名入力時の自動サジェスト用） */
+const IBRAHIM_SERIES_YEAR = {
+  'にじさんじスクラッチ第三弾':2020,'にじさんじおでかけグッズ':2020,'にじさんじハロウィンボイス2020':2020,'にじさんじぷち第3弾':2020,
+  'にじさんじ Anniversary Festival 2021 グループK':2021,'にじさんじのB級バラエティ(仮) イラスト素材':2021,'にじさんじホワイトデーグッズ2021':2021,
+  'カーテン魂オリジナルグッズ':2021,'イブラヒム 誕生日グッズ＆ボイス2021':2021,'にじさんじFashion Goods':2021,
+  'にじさんじ × pixiv collection4':2021,'NIJI GRAFFITIグッズ':2021,'e-zakkamania アパレルコラボ':2021,'にじさんじチョコレートver3':2021,
+  'にじさんじ1月季節ボイス2022 Vol.1':2022,'にじさんじ 4th Anniversary':2022,'OGL × vaultroom':2022,'にじさんじ オードパルファム':2022,
+  'にじさんじCAFE in SWEETS PARADISE':2022,'比類なき才能の証明':2022,'ジューンブライドグッズ2022':2022,'イブラヒム 誕生日グッズ＆ボイス2022':2022,
+  'セ・リーグ6球団 × にじさんじコラボ':2022,'にじさんじフェス2022':2022,'にじさんじ×ウェンディーズ・ファーストキッチンコラボ':2022,
+  'にじさんじ×SBI証券':2022,'にじさんじ卓上カレンダー2023':2022,
+  'にじさんじ5thAnniversaryグッズ':2023,'にじさんじタロットグッズ':2023,'にじさんじ × GiGO':2023,'にじさんじチャイナスタイルグッズ':2023,
+  'くじスクエア にじさんじ':2023,'イブラヒム 誕生日グッズ＆ボイス2023':2023,'Number1078号':2023,'にじさんじバンド キービジュアル':2023,
+  'NIJISANJI SUMMER COLLECTION 2023':2023,'くろのわバーサス':2023,'にじさんじ x NEW ERA':2023,'にじさんじチップスVol.5':2023,
+  'UN-DIMENSION vol.3':2023,'ストリートファイター6×にじさんじ':2023,'にじさんじ × 極楽湯':2023,'KZH CUP':2023,
+  'にじさんじ ウィンターデート2023':2023,'にじさんじフェス2023':2023,
+  'にじさんじ×まねきねこ Winter Music':2024,'にじTグッズ':2024,'にじさんじCafe in SWEETS PARADISE':2024,'にじバラワイン':2024,
+  'NIJIベア vol.3':2024,'2024シーズン J1全20クラブ×にじさんじ':2024,'セブンイレブン x にじさんじ':2024,
+  'NIJISANJI Battle Mode Type：Kuzuha＆Ibrahim':2024,'イブラヒム誕生日グッズ＆ボイス 2024':2024,'にじさんじ Christmas Wear':2024,
+  'AVIOT × イブラヒム コラボワイヤレスイヤホン':2024,'＆honey × にじさんじ':2024,'にじさんじお食事グッズ4':2024,
+  'にじさんじおせち2025':2024,'にじさんじテラリウムグッズ':2024,'にじフェス2025':2024,
+  'NIJI HOLIC グッズ':2025,'にじバラ 新キービジュアル':2025,'MEIFU 5th Anniversary グッズ':2025,'にじさんじ 7th Anniversary グッズ':2025,
+  'ART OF NIJISANJI':2025,'ダーツライブ・ダーツハイブ×にじさんじ':2025,'にじさんじコラボ・マスターズ':2025,'2時だとか 1st ワンマンライブ グッズ':2025,
+  '推し活トラベル JR東日本×にじさんじ':2025,'にじさんじ×くら寿司':2025,'2時だとか×まねきねこ':2025,'にじさんじ×ふもコレ':2025,
+  '狂騒RIOT':2025,'イブラヒム誕生日グッズ＆ボイス2025':2025,'Quick Japan vol.179':2025,'GOOOMiiES グッズ':2025,
+  'デュエル・マスターズプレイス にじさんじコラボ第6弾':2025,'GRAY×ACCENT グッズ':2025,'2時だとか 1stワンマンライブ Blu-ray':2025,
+  'PROSTYLE × にじさんじ':2025,'ゆかいなパンやさん グッズ':2025,'にじフェス2026 グッズ':2025,
+  'にじさんじ 8th Anniversary':2026,'にじさんじ 8th with cake':2026,'すき家×せめ4':2026,'びっくらたまご つむまる vol.4':2026,
+  'にじさんじ ウエハース2':2026,'チョコエッグプラス にじさんじ2':2026,'VSせめよん':2026,'UHA味覚糖 × にじさんじ 第3弾':2026,
+  'GALLERIAコラボモデルPC':2026,'Rainy Day Laundry':2026
+};
+function guessReleaseYear(seriesText){
+  if(!seriesText) return null;
+  const norm = s => s.replace(/[×＆&\s　・]/g,'').toLowerCase();
+  const target = norm(seriesText);
+  if(!target) return null;
+  let best = null, bestLen = 0;
+  for(const key in IBRAHIM_SERIES_YEAR){
+    const nk = norm(key);
+    if(target.includes(nk) || nk.includes(target)){
+      if(nk.length > bestLen){ bestLen = nk.length; best = IBRAHIM_SERIES_YEAR[key]; }
+    }
+  }
+  return best;
+}
+
 let state = { characters: [], items: [], theme: 'pop' };
 let view = { screen:'home', characterId:null };
-let filter = { q:'', category:'ALL', series:'ALL', sort:'new' };
+let filter = { q:'', category:'ALL', series:'ALL', sort:'qtyHigh' };
 let dragCtx = null;
 let justDragged = false;
 
@@ -575,7 +630,7 @@ function renderHome(){
   main.querySelectorAll('[data-open]').forEach(b=>{
     b.onclick = ()=>{
       if(justDragged){ justDragged=false; return; }
-      view.screen='detail'; view.characterId = b.dataset.open; filter={q:'',category:'ALL',series:'ALL',sort:'new'}; render();
+      view.screen='detail'; view.characterId = b.dataset.open; filter={q:'',category:'ALL',series:'ALL',sort:'qtyHigh'}; render();
     };
   });
   document.getElementById('addCharBtn').onclick = ()=>openCharModal(null);
@@ -680,10 +735,10 @@ function getFilteredSortedItems(chItems){
   else if(filter.sort==='priceLow') list = list.slice().sort((a,b)=>a.price-b.price);
   else if(filter.sort==='qtyHigh') list = list.slice().sort((a,b)=>b.qty-a.qty);
   else if(filter.sort==='qtyLow') list = list.slice().sort((a,b)=>a.qty-b.qty);
-  else if(filter.sort==='nameAsc') list = list.slice().sort((a,b)=>a.name.localeCompare(b.name,'ja'));
-  else if(filter.sort==='nameDesc') list = list.slice().sort((a,b)=>b.name.localeCompare(a.name,'ja'));
-  else if(filter.sort==='seriesAsc') list = list.slice().sort((a,b)=>(a.series||'').localeCompare(b.series||'','ja'));
-  else if(filter.sort==='seriesDesc') list = list.slice().sort((a,b)=>(b.series||'').localeCompare(a.series||'','ja'));
+  else if(filter.sort==='releaseNew') list = list.slice().sort((a,b)=>(b.releaseYear||0)-(a.releaseYear||0));
+  else if(filter.sort==='releaseOld') list = list.slice().sort((a,b)=>{
+    const ay=a.releaseYear||9999, by=b.releaseYear||9999; return ay-by;
+  });
   else if(filter.sort==='oldest') list = list.slice().sort((a,b)=>(a.createdAt?.seconds||0)-(b.createdAt?.seconds||0));
   return list;
 }
@@ -705,7 +760,7 @@ function renderItemGridHtml(list){
             <span class="item-price">${fmtYen(i.price)}</span>
             <span class="item-qty">×${i.qty}</span>
           </div>
-          <div class="item-sub">小計 ${fmtYen(Number(i.price||0)*Number(i.qty||0))}</div>
+          <div class="item-sub">小計 ${fmtYen(Number(i.price||0)*Number(i.qty||0))}${i.releaseYear ? ` ・ ${i.releaseYear}年` : ''}</div>
         </div>
       </div>`;
   });
@@ -742,10 +797,8 @@ function renderDetail(){
           <option value="qtyLow" ${filter.sort==='qtyLow'?'selected':''}>個数少ない順</option>
           <option value="priceHigh" ${filter.sort==='priceHigh'?'selected':''}>価格高い順</option>
           <option value="priceLow" ${filter.sort==='priceLow'?'selected':''}>価格安い順</option>
-          <option value="nameAsc" ${filter.sort==='nameAsc'?'selected':''}>名前（あ→ん）</option>
-          <option value="nameDesc" ${filter.sort==='nameDesc'?'selected':''}>名前（ん→あ）</option>
-          <option value="seriesAsc" ${filter.sort==='seriesAsc'?'selected':''}>シリーズ（あ→ん）</option>
-          <option value="seriesDesc" ${filter.sort==='seriesDesc'?'selected':''}>シリーズ（ん→あ）</option>
+          <option value="releaseNew" ${filter.sort==='releaseNew'?'selected':''}>発売年新しい順</option>
+          <option value="releaseOld" ${filter.sort==='releaseOld'?'selected':''}>発売年古い順</option>
         </select>
       </div>
       <div class="filterrow" style="display:flex; gap:8px; min-width:0;">
@@ -863,11 +916,29 @@ function openItemModal(id){
   document.getElementById('itemCatInput').value = it ? (it.category||'') : '';
   document.getElementById('itemPriceInput').value = it ? it.price : '';
   document.getElementById('itemQtyInput').value = it ? it.qty : 1;
+  document.getElementById('itemYearInput').value = it && it.releaseYear ? it.releaseYear : '';
   document.getElementById('itemMemoInput').value = it ? (it.memo||'') : '';
   itemImgTemp = it ? getItemImages(it).slice() : [];
   updateItemImgPick();
   document.getElementById('nameSuggestRow').classList.add('hidden');
   document.getElementById('nameSuggestRow').innerHTML = '';
+
+  const seriesInput = document.getElementById('itemSeriesInput');
+  const yearInput = document.getElementById('itemYearInput');
+  seriesInput.onblur = ()=>{
+    if(!ch || ch.name!=='イブラヒム') return;
+    if(yearInput.value) return; // すでに入力済みなら上書きしない
+    const guessed = guessReleaseYear(seriesInput.value.trim());
+    if(guessed){
+      const row = document.getElementById('nameSuggestRow');
+      row.classList.remove('hidden');
+      const chip = document.createElement('button');
+      chip.type = 'button'; chip.className = 'suggest-chip';
+      chip.textContent = `発売年: ${guessed}年 ✓`;
+      chip.onclick = ()=>{ yearInput.value = guessed; chip.remove(); };
+      row.appendChild(chip);
+    }
+  };
 
   const usedCats = Array.from(new Set(state.items.map(i=>i.category).filter(Boolean)));
   const allCats = Array.from(new Set([...CATEGORY_LIST, ...usedCats]));
@@ -904,6 +975,7 @@ function openItemModal(id){
     const category = document.getElementById('itemCatInput').value.trim();
     const price = Number(document.getElementById('itemPriceInput').value)||0;
     const qty = Number(document.getElementById('itemQtyInput').value)||1;
+    const releaseYear = Number(document.getElementById('itemYearInput').value)||null;
     const memo = document.getElementById('itemMemoInput').value.trim();
     if(totalImageBytes(itemImgTemp) > MAX_IMAGE_BYTES){
       showToast('画像の合計サイズが大きすぎるよ。枚数を減らしてね');
@@ -913,9 +985,9 @@ function openItemModal(id){
     try{
       const images = itemImgTemp;
       if(it){
-        await updateDoc(doc(db,'users',uid,'items',it.id), { name, series, category, price, qty, memo, images, image: images[0]||null });
+        await updateDoc(doc(db,'users',uid,'items',it.id), { name, series, category, price, qty, releaseYear, memo, images, image: images[0]||null });
       } else {
-        await addDoc(collection(db,'users',uid,'items'), { characterId: view.characterId, name, series, category, price, qty, memo, images, image: images[0]||null, createdAt: serverTimestamp() });
+        await addDoc(collection(db,'users',uid,'items'), { characterId: view.characterId, name, series, category, price, qty, releaseYear, memo, images, image: images[0]||null, createdAt: serverTimestamp() });
       }
       closeModal('itemOverlay'); showToast('保存したよ');
     }catch(e){ showToast('保存に失敗: ' + e.message); }
@@ -1253,6 +1325,26 @@ document.getElementById('reExtractBtn').onclick = async ()=>{
   }
   btn.textContent = '🔧 商品名からシリーズ・カテゴリを再抽出';
   showToast(`${updatedCount}件を補完したよ`);
+};
+
+document.getElementById('fillYearBtn').onclick = async ()=>{
+  const ibrahim = state.characters.find(c=>c.name==='イブラヒム');
+  if(!ibrahim){ showToast('イブラヒムのキャラが見つからなかったよ'); return; }
+  const targets = state.items.filter(it=> it.characterId===ibrahim.id && !it.releaseYear && it.series);
+  if(targets.length===0){ showToast('補完できそうなグッズはなかったよ'); return; }
+  if(!confirm(`${targets.length}件のグッズについて、シリーズ名から発売年を推測して入力するね。実行する？`)) return;
+  const btn = document.getElementById('fillYearBtn');
+  let updatedCount = 0;
+  for(let i=0; i<targets.length; i++){
+    const it = targets[i];
+    btn.textContent = `処理中… (${i+1}/${targets.length})`;
+    const guessed = guessReleaseYear(it.series||'');
+    if(guessed){
+      try{ await updateDoc(doc(db,'users',uid,'items',it.id), { releaseYear: guessed }); updatedCount++; }catch(e){}
+    }
+  }
+  btn.textContent = '📅 イブラヒムの発売年を自動入力';
+  showToast(`${updatedCount}件の発売年を入力したよ`);
 };
 </script>
 </body>
