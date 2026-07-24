@@ -294,6 +294,18 @@
     <div class="backupbar">
       <button class="backupbtn" id="exportBtn">⬇️ 念のためJSONで書き出す</button>
     </div>
+    <div class="backupbar">
+      <button class="backupbtn" id="fillYearBtn">📅 イブラヒムの発売年を自動入力</button>
+    </div>
+    <p style="font-size:11.5px; color:var(--ink-soft); line-height:1.5;">
+      イブラヒムのグッズのうち、発売年が空欄でシリーズ名が登録済みのものだけ、シリーズ名から発売年を推測して入力するよ。すでに入力済みのものは上書きしません。
+    </p>
+    <div class="backupbar">
+      <button class="backupbtn" id="reviewBtn">📝 グッズを一件ずつ見直す</button>
+    </div>
+    <p style="font-size:11.5px; color:var(--ink-soft); line-height:1.5;">
+      登録済みの全グッズを1件ずつ表示して、商品名・シリーズ名・価格をその場で修正できるよ。合ってれば「次へ」、直したければ書き換えて「保存して次へ」。
+    </p>
     <div class="sheet-actions" style="margin-top:16px;">
       <button class="btn primary" id="backupCloseBtn">閉じる</button>
     </div>
@@ -308,6 +320,21 @@
     <div id="scanBody"></div>
     <div class="sheet-actions">
       <button class="btn ghost" id="scanCloseBtn">閉じる</button>
+    </div>
+  </div>
+</div>
+
+<!-- Item review overlay -->
+<div class="overlay" id="reviewOverlay">
+  <div class="sheet">
+    <h2 id="reviewTitle">見直し</h2>
+    <div id="reviewBody"></div>
+    <div class="sheet-actions" id="reviewActionRow">
+      <button class="btn ghost" id="reviewSkipBtn">次へ（変更なし）</button>
+      <button class="btn primary" id="reviewSaveBtn">保存して次へ</button>
+    </div>
+    <div class="sheet-actions" style="margin-top:8px;">
+      <button class="btn ghost" id="reviewCloseBtn">閉じる</button>
     </div>
   </div>
 </div>
@@ -361,33 +388,40 @@ const CATEGORY_LIST = [
 
 /* イブラヒムの撮り下ろしビジュアル使用グッズ・企画名 → 発売年（シリーズ名入力時の自動サジェスト用） */
 const IBRAHIM_SERIES_YEAR = {
-  'にじさんじスクラッチ第三弾':2020,'にじさんじおでかけグッズ':2020,'にじさんじハロウィンボイス2020':2020,'にじさんじぷち第3弾':2020,
-  'にじさんじ Anniversary Festival 2021 グループK':2021,'にじさんじのB級バラエティ(仮) イラスト素材':2021,'にじさんじホワイトデーグッズ2021':2021,
-  'カーテン魂オリジナルグッズ':2021,'イブラヒム 誕生日グッズ＆ボイス2021':2021,'にじさんじFashion Goods':2021,
-  'にじさんじ × pixiv collection4':2021,'NIJI GRAFFITIグッズ':2021,'e-zakkamania アパレルコラボ':2021,'にじさんじチョコレートver3':2021,
-  'にじさんじ1月季節ボイス2022 Vol.1':2022,'にじさんじ 4th Anniversary':2022,'OGL × vaultroom':2022,'にじさんじ オードパルファム':2022,
-  'にじさんじCAFE in SWEETS PARADISE':2022,'比類なき才能の証明':2022,'ジューンブライドグッズ2022':2022,'イブラヒム 誕生日グッズ＆ボイス2022':2022,
-  'セ・リーグ6球団 × にじさんじコラボ':2022,'にじさんじフェス2022':2022,'にじさんじ×ウェンディーズ・ファーストキッチンコラボ':2022,
-  'にじさんじ×SBI証券':2022,'にじさんじ卓上カレンダー2023':2022,
-  'にじさんじ5thAnniversaryグッズ':2023,'にじさんじタロットグッズ':2023,'にじさんじ × GiGO':2023,'にじさんじチャイナスタイルグッズ':2023,
-  'くじスクエア にじさんじ':2023,'イブラヒム 誕生日グッズ＆ボイス2023':2023,'Number1078号':2023,'にじさんじバンド キービジュアル':2023,
-  'NIJISANJI SUMMER COLLECTION 2023':2023,'くろのわバーサス':2023,'にじさんじ x NEW ERA':2023,'にじさんじチップスVol.5':2023,
-  'UN-DIMENSION vol.3':2023,'ストリートファイター6×にじさんじ':2023,'にじさんじ × 極楽湯':2023,'KZH CUP':2023,
-  'にじさんじ ウィンターデート2023':2023,'にじさんじフェス2023':2023,
-  'にじさんじ×まねきねこ Winter Music':2024,'にじTグッズ':2024,'にじさんじCafe in SWEETS PARADISE':2024,'にじバラワイン':2024,
-  'NIJIベア vol.3':2024,'2024シーズン J1全20クラブ×にじさんじ':2024,'セブンイレブン x にじさんじ':2024,
-  'NIJISANJI Battle Mode Type：Kuzuha＆Ibrahim':2024,'イブラヒム誕生日グッズ＆ボイス 2024':2024,'にじさんじ Christmas Wear':2024,
-  'AVIOT × イブラヒム コラボワイヤレスイヤホン':2024,'＆honey × にじさんじ':2024,'にじさんじお食事グッズ4':2024,
-  'にじさんじおせち2025':2024,'にじさんじテラリウムグッズ':2024,'にじフェス2025':2024,
-  'NIJI HOLIC グッズ':2025,'にじバラ 新キービジュアル':2025,'MEIFU 5th Anniversary グッズ':2025,'にじさんじ 7th Anniversary グッズ':2025,
-  'ART OF NIJISANJI':2025,'ダーツライブ・ダーツハイブ×にじさんじ':2025,'にじさんじコラボ・マスターズ':2025,'2時だとか 1st ワンマンライブ グッズ':2025,
-  '推し活トラベル JR東日本×にじさんじ':2025,'にじさんじ×くら寿司':2025,'2時だとか×まねきねこ':2025,'にじさんじ×ふもコレ':2025,
-  '狂騒RIOT':2025,'イブラヒム誕生日グッズ＆ボイス2025':2025,'Quick Japan vol.179':2025,'GOOOMiiES グッズ':2025,
-  'デュエル・マスターズプレイス にじさんじコラボ第6弾':2025,'GRAY×ACCENT グッズ':2025,'2時だとか 1stワンマンライブ Blu-ray':2025,
-  'PROSTYLE × にじさんじ':2025,'ゆかいなパンやさん グッズ':2025,'にじフェス2026 グッズ':2025,
-  'にじさんじ 8th Anniversary':2026,'にじさんじ 8th with cake':2026,'すき家×せめ4':2026,'びっくらたまご つむまる vol.4':2026,
-  'にじさんじ ウエハース2':2026,'チョコエッグプラス にじさんじ2':2026,'VSせめよん':2026,'UHA味覚糖 × にじさんじ 第3弾':2026,
-  'GALLERIAコラボモデルPC':2026,'Rainy Day Laundry':2026
+  'にじフェス2021グッズ':2021,'にじさんじホワイトデーグッズ2021':2021,'にじさんじドットアートグッズ':2021,
+  'カーテン魂限定オリジナルグッズ':2021,'カーテン魂オリジナルグッズ':2021,'イブラヒム誕生日グッズ2021':2021,
+  'にじさんじDMMスクラッチ第五弾':2021,'にじさんじコロこっと':2021,'にじさんじのB級バラエティ(仮) イブラヒムサウンドキーホルダーセット':2021,
+  'にじさんじFashion Goods':2021,'NIJI GRAFFITI':2021,'にじさんじチップスVol2':2021,'にじさんじ × e-zakkamania':2021,
+  'にじさんじミニフィギュアコレクション第3弾':2021,
+  'にじさんじ新ビジュアルグッズ第13弾':2022,'にじさんじチョコレート ver3':2022,'にじさんじ4th Anniversaryグッズ':2022,
+  'にじさんじゆるパレット':2022,'WhiteDay Gift':2022,'OGL × vaultroom':2022,'にじさんじオードパルファム':2022,
+  'にじさんじライバーモデルTシャツ第9弾':2022,'Welcome Goods':2022,'にじさんじCAFE in SWEETS PARADISE':2022,
+  'にじさんじデフォルメグッズ':2022,'にじさんじジューンブライド2022グッズ':2022,'イブラヒム誕生日グッズ2022':2022,
+  'セ・リーグ6球団 × にじさんじ':2022,'にじさんじラバーマスコットコレクション':2022,'にじフェス2022グッズ':2022,
+  'にじさんじ × ウェンディーズ ファーストキッチンコラボ':2022,'にじさんじ卓上カレンダー2023':2022,
+  'にじさんじ5th Anniversaryグッズ':2023,'にじさんじタロットグッズ':2023,'vaultroom × ibrahim':2023,'にじさんじ × GiGO':2023,
+  'にじさんじチャイナスタイルグッズ':2023,'Ibrahim 3rd Anniversary Animation Goods':2023,'くじスクエア にじさんじ':2023,
+  'にじさんじ甲子園2023応援グッズ':2023,'イブラヒム誕生日グッズ2023':2023,'にじぱぺっとシリーズ vol.5':2023,
+  'NIJISANJI SUMMER COLLECTION 2023':2023,'にじさんじ × NEW ERA':2023,'にじぱぺっとグッズ2':2023,'にじさんじチップスVol.5':2023,
+  'にじフェス2023グッズ':2023,'UN-DIMENSION vol.3':2023,'ストリートファイター6 × にじさんじコラボくじ':2023,
+  'にじさんじ × 極楽湯':2023,'にじさんじウィンターデート2023グッズ':2023,'にじさんじフレグランス vol.3':2023,
+  'にじさんじ×まねきねこ Winter Music':2024,'にじTグッズ':2024,'にじさんじCafe IN SWEETS PARADICE':2024,
+  'にじさんじのB級バラエティ的ワイン':2024,'NIJIベア vol.3':2024,'2024シーズン J1全20クラブ×にじさんじ':2024,
+  'にじさんじ ウェファーチョコ':2024,'NIJISANJI Battle Mode Type：Kuzuha＆Ibrahim':2024,'イブラヒム誕生日グッズ2024':2024,
+  'にじさんじ Christmas Wear':2024,'AVIOT × イブラヒム コラボワイヤレスイヤホン':2024,'にじさんじノスタルジアコレクション':2024,
+  'にじさんじお食事グッズ4':2024,'NIJIベア ぬいぐるみキーホルダー':2024,'にじさんじおせち2025':2024,
+  'にじさんじテラリウムグッズ':2024,'にじフェス2025グッズ':2024,'にじさんじ歌謡祭2024':2024,
+  'NIJI HOLICグッズ':2025,'MEIFU 5th Anniversaryグッズ':2025,'にじさんじ7th Anniversaryグッズ':2025,
+  'にじぱぺっと共通衣装シリーズ':2025,'ART OF NIJISANJI':2025,'にじフェス2025 ブロマイドセット':2025,
+  'ダーツハイブ × にじさんじ':2025,'2時だとか 1st LIVEグッズ':2025,'デュエル・マスターズ':2025,'にじさんじ × ふもコレ':2025,
+  'にじぱぺっとコンセプトシリーズ vol.10':2025,'にじさんじ甲子園2025グッズ':2025,'イブラヒム誕生日グッズ2025':2025,
+  'Standard Goods Vol.5':2025,'GOOOMiiES グッズ':2025,'にじさんじノスタルジアコレクション2025':2025,
+  'にじぱぺフォトグッズ Vol.2':2025,'イブラヒム 1/7スケールフィギュア':2025,'GRAY×ACCENT グッズ':2025,
+  'ゆかいなパンやさん グッズ':2025,'にじフェス2026 オリジナルグッズ':2025,
+  'にじさんじ 8th Anniversaryグッズ':2026,'にじさんじ 8th with cake':2026,'にじさんじウエハース2':2026,
+  'CharmAid にじさんじ':2026,'びっくらたまご つむまる にじさんじ vol.4':2026,'にじぬい共通衣装シリーズ':2026,
+  'VSせめよん':2026,'GALLERIAコラボモデルPC':2026,'チョコエッグプラス × にじさんじ第2弾':2026,
+  'にじさんじぬいモード マスコットチャーム':2026,'Rainy Day Laundry':2026
 };
 function guessReleaseYear(seriesText){
   if(!seriesText) return null;
@@ -1205,6 +1239,55 @@ function runScanConfirmFlow(items){
 }
 document.getElementById('scanCloseBtn').onclick = ()=>closeModal('scanOverlay');
 
+/* ---------------- Item review flow (既存グッズの一括見直し) ---------------- */
+function startReviewFlow(){
+  const items = state.items.slice();
+  if(items.length===0){ showToast('グッズが登録されてないよ'); return; }
+  let idx = 0;
+  function showItem(){
+    if(idx >= items.length){
+      document.getElementById('reviewTitle').textContent = '確認完了！';
+      document.getElementById('reviewBody').innerHTML = `<p style="font-size:14px;">全${items.length}件を確認したよ🎀</p>`;
+      document.getElementById('reviewActionRow').classList.add('hidden');
+      return;
+    }
+    document.getElementById('reviewActionRow').classList.remove('hidden');
+    const it = items[idx];
+    const ch = state.characters.find(c=>c.id===it.characterId);
+    document.getElementById('reviewTitle').textContent = `見直し (${idx+1}/${items.length})`;
+    document.getElementById('reviewBody').innerHTML = `
+      <p style="font-size:12px; color:var(--ink-soft); margin:0 0 10px;">${ch ? ch.name : '(キャラ不明)'}のグッズ</p>
+      <div class="field">
+        <label>商品名</label>
+        <input type="text" id="reviewName" value="${(it.name||'').replace(/"/g,'&quot;')}">
+      </div>
+      <div class="field">
+        <label>シリーズ名</label>
+        <input type="text" id="reviewSeries" value="${(it.series||'').replace(/"/g,'&quot;')}">
+        ${(ch && ch.name==='イブラヒム' && it.series && guessReleaseYear(it.series)) ? `<p style="font-size:11px; color:var(--ink-soft); margin:6px 0 0;">💡 このシリーズ名だと発売年は${guessReleaseYear(it.series)}年と推測されるよ</p>` : ''}
+      </div>
+      <div class="field">
+        <label>価格（円）</label>
+        <input type="number" id="reviewPrice" value="${it.price||0}">
+      </div>
+    `;
+    document.getElementById('reviewSaveBtn').onclick = async ()=>{
+      const name = document.getElementById('reviewName').value.trim();
+      const series = document.getElementById('reviewSeries').value.trim();
+      const price = Number(document.getElementById('reviewPrice').value)||0;
+      if(!name){ showToast('商品名は空にできないよ'); return; }
+      try{ await updateDoc(doc(db,'users',uid,'items',it.id), { name, series, price }); }
+      catch(e){ showToast('保存に失敗: ' + e.message); return; }
+      idx++; showItem();
+    };
+    document.getElementById('reviewSkipBtn').onclick = ()=>{ idx++; showItem(); };
+  }
+  showItem();
+  openModal('reviewOverlay');
+}
+document.getElementById('reviewBtn').onclick = ()=>{ closeModal('backupOverlay'); startReviewFlow(); };
+document.getElementById('reviewCloseBtn').onclick = ()=>closeModal('reviewOverlay');
+
 document.getElementById('backupOpenBtn').onclick = ()=>{ openModal('backupOverlay'); };
 
 document.getElementById('backupCloseBtn').onclick = ()=>closeModal('backupOverlay');
@@ -1220,6 +1303,26 @@ document.getElementById('exportBtn').onclick = ()=>{
   document.body.appendChild(a); a.click(); document.body.removeChild(a);
   URL.revokeObjectURL(url);
   showToast('書き出したよ');
+};
+
+document.getElementById('fillYearBtn').onclick = async ()=>{
+  const ibrahim = state.characters.find(c=>c.name==='イブラヒム');
+  if(!ibrahim){ showToast('イブラヒムのキャラが見つからなかったよ'); return; }
+  const targets = state.items.filter(it=> it.characterId===ibrahim.id && !it.releaseYear && it.series);
+  if(targets.length===0){ showToast('補完できそうなグッズはなかったよ'); return; }
+  if(!confirm(`${targets.length}件のグッズについて、シリーズ名から発売年を推測して入力するね。実行する？`)) return;
+  const btn = document.getElementById('fillYearBtn');
+  let updatedCount = 0;
+  for(let i=0; i<targets.length; i++){
+    const it = targets[i];
+    btn.textContent = `処理中… (${i+1}/${targets.length})`;
+    const guessed = guessReleaseYear(it.series||'');
+    if(guessed){
+      try{ await updateDoc(doc(db,'users',uid,'items',it.id), { releaseYear: guessed }); updatedCount++; }catch(e){}
+    }
+  }
+  btn.textContent = '📅 イブラヒムの発売年を自動入力';
+  showToast(`${updatedCount}件の発売年を入力したよ`);
 };
 
 /* ---------------- PWA installability (service worker登録) ---------------- */
