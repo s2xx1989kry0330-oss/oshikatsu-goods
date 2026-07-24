@@ -9,6 +9,8 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="グッズ帳">
 <meta name="theme-color" content="#FBF7FC">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icon-192.png">
 <link rel="icon" href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIxODAiIGhlaWdodD0iMTgwIj48cmVjdCB3aWR0aD0iMTgwIiBoZWlnaHQ9IjE4MCIgcng9IjQwIiBmaWxsPSIjRkY2RkE1Ii8+PGNpcmNsZSBjeD0iOTAiIGN5PSI5MCIgcj0iNTQiIGZpbGw9IiNGRkZGRkYiLz48Y2lyY2xlIGN4PSI5MCIgY3k9IjkwIiByPSI0MCIgZmlsbD0iI0ZGNkZBNSIvPjxjaXJjbGUgY3g9IjkwIiBjeT0iOTAiIHI9IjE0IiBmaWxsPSIjRkZGRkZGIi8+PC9zdmc+">
 <style>
   :root{
@@ -1346,6 +1348,13 @@ document.getElementById('fillYearBtn').onclick = async ()=>{
   btn.textContent = '📅 イブラヒムの発売年を自動入力';
   showToast(`${updatedCount}件の発売年を入力したよ`);
 };
+
+/* ---------------- PWA installability (service worker登録) ---------------- */
+if('serviceWorker' in navigator){
+  window.addEventListener('load', ()=>{
+    navigator.serviceWorker.register('./sw.js').catch(()=>{});
+  });
+}
 </script>
 </body>
 </html>
