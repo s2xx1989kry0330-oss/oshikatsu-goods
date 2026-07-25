@@ -301,7 +301,25 @@
       イブラヒムのグッズのうち、発売年が空欄でシリーズ名が登録済みのものだけ、シリーズ名から発売年を推測して入力するよ。すでに入力済みのものは上書きしません。
     </p>
     <div class="backupbar">
-      <button class="backupbtn" id="reviewBtn">📝 グッズを一件ずつ見直す</button>
+      <button class="backupbtn" id="seriesCleanupBtn">🔤 シリーズ名の表記ゆれを整理</button>
+    </div>
+    <p style="font-size:11.5px; color:var(--ink-soft); line-height:1.5;">
+      似てるけど微妙に表記が違うシリーズ名（スペースの有無・記号違いなど）をグループにして見せるよ。まとめて1つの表記に統一できる。
+    </p>
+    <div class="backupbar">
+      <button class="backupbtn" id="nameCleanupBtn">🔤 商品名の表記ゆれを整理</button>
+    </div>
+    <p style="font-size:11.5px; color:var(--ink-soft); line-height:1.5;">
+      同じグッズなのに商品名の表記が微妙に違うものをグループにして見せるよ。一番詳しい表記を初期候補にするから、正式名称に寄せて統一しやすいはず。
+    </p>
+    <div class="backupbar">
+      <button class="backupbtn" id="reviewMismatchBtn">⚠️ 発売年に相違があるグッズだけ確認</button>
+    </div>
+    <p style="font-size:11.5px; color:var(--ink-soft); line-height:1.5;">
+      イブラヒムのグッズのうち、シリーズ名から推測される発売年と、今登録されてる発売年が食い違ってるものだけ表示するよ。
+    </p>
+    <div class="backupbar">
+      <button class="backupbtn" id="reviewBtn">📝 グッズを一件ずつ見直す（全件）</button>
     </div>
     <p style="font-size:11.5px; color:var(--ink-soft); line-height:1.5;">
       登録済みの全グッズを1件ずつ表示して、商品名・シリーズ名・価格をその場で修正できるよ。合ってれば「次へ」、直したければ書き換えて「保存して次へ」。
@@ -1240,10 +1258,28 @@ function runScanConfirmFlow(items){
 document.getElementById('scanCloseBtn').onclick = ()=>closeModal('scanOverlay');
 
 /* ---------------- Item review flow (既存グッズの一括見直し) ---------------- */
-function startReviewFlow(){
-  const items = state.items.slice();
-  if(items.length===0){ showToast('グッズが登録されてないよ'); return; }
+function findMismatchYear(it, ch){
+  if(!ch || ch.name!=='イブラヒム') return null;
+  if(!it.series) return null;
+  const guessed = guessReleaseYear(it.series);
+  if(!guessed) return null;
+  if(guessed === it.releaseYear) return null;
+  return guessed;
+}
+function startReviewFlow(onlyMismatch){
+  let items = state.items.slice();
+  if(onlyMismatch){
+    items = items.filter(it=>{
+      const ch = state.characters.find(c=>c.id===it.characterId);
+      return findMismatchYear(it, ch) !== null;
+    });
+    if(items.length===0){ showToast('相違があるグッズは見つからなかったよ'); return; }
+  } else {
+    if(items.length===0){ showToast('グッズが登録されてないよ'); return; }
+  }
   let idx = 0;
+  document.getElementById('reviewSaveBtn').textContent = '保存して次へ';
+  document.getElementById('reviewSkipBtn').textContent = '次へ（変更なし）';
   function showItem(){
     if(idx >= items.length){
       document.getElementById('reviewTitle').textContent = '確認完了！';
@@ -1254,6 +1290,7 @@ function startReviewFlow(){
     document.getElementById('reviewActionRow').classList.remove('hidden');
     const it = items[idx];
     const ch = state.characters.find(c=>c.id===it.characterId);
+    const guessed = findMismatchYear(it, ch);
     document.getElementById('reviewTitle').textContent = `見直し (${idx+1}/${items.length})`;
     document.getElementById('reviewBody').innerHTML = `
       <p style="font-size:12px; color:var(--ink-soft); margin:0 0 10px;">${ch ? ch.name : '(キャラ不明)'}のグッズ</p>
@@ -1264,19 +1301,30 @@ function startReviewFlow(){
       <div class="field">
         <label>シリーズ名</label>
         <input type="text" id="reviewSeries" value="${(it.series||'').replace(/"/g,'&quot;')}">
-        ${(ch && ch.name==='イブラヒム' && it.series && guessReleaseYear(it.series)) ? `<p style="font-size:11px; color:var(--ink-soft); margin:6px 0 0;">💡 このシリーズ名だと発売年は${guessReleaseYear(it.series)}年と推測されるよ</p>` : ''}
       </div>
-      <div class="field">
-        <label>価格（円）</label>
-        <input type="number" id="reviewPrice" value="${it.price||0}">
+      <div class="field" style="display:flex; gap:10px;">
+        <div style="flex:1;">
+          <label>発売年</label>
+          <input type="number" id="reviewYear" value="${it.releaseYear||''}">
+        </div>
+        <div style="flex:1;">
+          <label>価格（円）</label>
+          <input type="number" id="reviewPrice" value="${it.price||0}">
+        </div>
       </div>
+      ${guessed ? `<p style="font-size:12px; color:var(--pink-deep); font-weight:700; margin:-4px 0 10px;">⚠️ 現在${it.releaseYear?`「${it.releaseYear}年」`:'未入力'}だけど、シリーズ名からは「${guessed}年」と推測されるよ</p>
+      <button type="button" class="suggest-chip" id="reviewApplyGuess" style="margin-bottom:10px;">推測の${guessed}年を反映する</button>` : ''}
     `;
+    if(guessed){
+      document.getElementById('reviewApplyGuess').onclick = ()=>{ document.getElementById('reviewYear').value = guessed; };
+    }
     document.getElementById('reviewSaveBtn').onclick = async ()=>{
       const name = document.getElementById('reviewName').value.trim();
       const series = document.getElementById('reviewSeries').value.trim();
+      const releaseYear = Number(document.getElementById('reviewYear').value)||null;
       const price = Number(document.getElementById('reviewPrice').value)||0;
       if(!name){ showToast('商品名は空にできないよ'); return; }
-      try{ await updateDoc(doc(db,'users',uid,'items',it.id), { name, series, price }); }
+      try{ await updateDoc(doc(db,'users',uid,'items',it.id), { name, series, releaseYear, price }); }
       catch(e){ showToast('保存に失敗: ' + e.message); return; }
       idx++; showItem();
     };
@@ -1285,7 +1333,131 @@ function startReviewFlow(){
   showItem();
   openModal('reviewOverlay');
 }
-document.getElementById('reviewBtn').onclick = ()=>{ closeModal('backupOverlay'); startReviewFlow(); };
+document.getElementById('reviewBtn').onclick = ()=>{ closeModal('backupOverlay'); startReviewFlow(false); };
+document.getElementById('reviewMismatchBtn').onclick = ()=>{ closeModal('backupOverlay'); startReviewFlow(true); };
+
+/* ---------------- Series name cleanup flow (表記ゆれの統一) ---------------- */
+function normLoose(s){ return (s||'').replace(/[×＆&\s　・/／\-－]/g,'').toLowerCase(); }
+function findSeriesVariantGroups(){
+  const groups = {};
+  state.items.forEach(it=>{
+    if(!it.series) return;
+    const key = normLoose(it.series);
+    if(!key) return;
+    if(!groups[key]) groups[key] = {};
+    groups[key][it.series] = (groups[key][it.series]||0) + 1;
+  });
+  return Object.values(groups).filter(variants => Object.keys(variants).length > 1);
+}
+function startSeriesCleanupFlow(){
+  const groups = findSeriesVariantGroups();
+  if(groups.length===0){ showToast('表記ゆれのあるシリーズ名は見つからなかったよ'); return; }
+  let idx = 0;
+  function showGroup(){
+    if(idx >= groups.length){
+      document.getElementById('reviewTitle').textContent = '整理完了！';
+      document.getElementById('reviewBody').innerHTML = `<p style="font-size:14px;">${groups.length}件のグループを確認したよ🎀</p>`;
+      document.getElementById('reviewActionRow').classList.add('hidden');
+      return;
+    }
+    document.getElementById('reviewActionRow').classList.remove('hidden');
+    const variants = groups[idx];
+    const variantList = Object.entries(variants).sort((a,b)=>b[1]-a[1]);
+    const suggested = variantList[0][0];
+    document.getElementById('reviewTitle').textContent = `シリーズ名の整理 (${idx+1}/${groups.length})`;
+    document.getElementById('reviewBody').innerHTML = `
+      <p style="font-size:12px; color:var(--ink-soft); margin:0 0 10px;">似た表記が${variantList.length}種類見つかったよ：</p>
+      <ul style="font-size:13px; line-height:1.8; margin:0 0 14px; padding-left:18px; color:var(--ink);">
+        ${variantList.map(([v,c])=>`<li>「${v}」（${c}件）</li>`).join('')}
+      </ul>
+      <div class="field">
+        <label>統一後のシリーズ名</label>
+        <input type="text" id="cleanupUnifiedName" value="${suggested.replace(/"/g,'&quot;')}">
+      </div>
+    `;
+    document.getElementById('reviewSaveBtn').textContent = 'この名前に統一する';
+    document.getElementById('reviewSaveBtn').onclick = async ()=>{
+      const unified = document.getElementById('cleanupUnifiedName').value.trim();
+      if(!unified){ showToast('シリーズ名を入力してね'); return; }
+      const rawVariants = Object.keys(variants);
+      const targets = state.items.filter(it => rawVariants.includes(it.series));
+      let count = 0;
+      for(const it of targets){
+        if(it.series !== unified){
+          try{ await updateDoc(doc(db,'users',uid,'items',it.id), { series: unified }); count++; }catch(e){}
+        }
+      }
+      showToast(`${count}件を統一したよ`);
+      idx++; showGroup();
+    };
+    document.getElementById('reviewSkipBtn').textContent = 'スキップ';
+    document.getElementById('reviewSkipBtn').onclick = ()=>{ idx++; showGroup(); };
+  }
+  showGroup();
+  openModal('reviewOverlay');
+}
+document.getElementById('seriesCleanupBtn').onclick = ()=>{ closeModal('backupOverlay'); startSeriesCleanupFlow(); };
+
+/* ---------------- Item name cleanup flow (商品名の表記ゆれ統一) ---------------- */
+function findNameVariantGroups(){
+  const groups = {};
+  state.items.forEach(it=>{
+    if(!it.name) return;
+    const key = normLoose(it.name);
+    if(!key) return;
+    if(!groups[key]) groups[key] = {};
+    groups[key][it.name] = (groups[key][it.name]||0) + 1;
+  });
+  return Object.values(groups).filter(variants => Object.keys(variants).length > 1);
+}
+function startNameCleanupFlow(){
+  const groups = findNameVariantGroups();
+  if(groups.length===0){ showToast('表記ゆれのある商品名は見つからなかったよ'); return; }
+  let idx = 0;
+  function showGroup(){
+    if(idx >= groups.length){
+      document.getElementById('reviewTitle').textContent = '整理完了！';
+      document.getElementById('reviewBody').innerHTML = `<p style="font-size:14px;">${groups.length}件のグループを確認したよ🎀</p>`;
+      document.getElementById('reviewActionRow').classList.add('hidden');
+      return;
+    }
+    document.getElementById('reviewActionRow').classList.remove('hidden');
+    const variants = groups[idx];
+    const variantList = Object.entries(variants).sort((a,b)=> b[0].length - a[0].length); // 一番長い(詳しい)表記を優先候補に
+    const suggested = variantList[0][0];
+    document.getElementById('reviewTitle').textContent = `商品名の整理 (${idx+1}/${groups.length})`;
+    document.getElementById('reviewBody').innerHTML = `
+      <p style="font-size:12px; color:var(--ink-soft); margin:0 0 10px;">似た表記が${variantList.length}種類見つかったよ：</p>
+      <ul style="font-size:13px; line-height:1.8; margin:0 0 14px; padding-left:18px; color:var(--ink);">
+        ${variantList.map(([v,c])=>`<li>「${v}」（${c}件）</li>`).join('')}
+      </ul>
+      <div class="field">
+        <label>統一後の商品名</label>
+        <input type="text" id="cleanupUnifiedItemName" value="${suggested.replace(/"/g,'&quot;')}">
+      </div>
+    `;
+    document.getElementById('reviewSaveBtn').textContent = 'この名前に統一する';
+    document.getElementById('reviewSaveBtn').onclick = async ()=>{
+      const unified = document.getElementById('cleanupUnifiedItemName').value.trim();
+      if(!unified){ showToast('商品名を入力してね'); return; }
+      const rawVariants = Object.keys(variants);
+      const targets = state.items.filter(it => rawVariants.includes(it.name));
+      let count = 0;
+      for(const it of targets){
+        if(it.name !== unified){
+          try{ await updateDoc(doc(db,'users',uid,'items',it.id), { name: unified }); count++; }catch(e){}
+        }
+      }
+      showToast(`${count}件を統一したよ`);
+      idx++; showGroup();
+    };
+    document.getElementById('reviewSkipBtn').textContent = 'スキップ';
+    document.getElementById('reviewSkipBtn').onclick = ()=>{ idx++; showGroup(); };
+  }
+  showGroup();
+  openModal('reviewOverlay');
+}
+document.getElementById('nameCleanupBtn').onclick = ()=>{ closeModal('backupOverlay'); startNameCleanupFlow(); };
 document.getElementById('reviewCloseBtn').onclick = ()=>closeModal('reviewOverlay');
 
 document.getElementById('backupOpenBtn').onclick = ()=>{ openModal('backupOverlay'); };
