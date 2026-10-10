@@ -121,6 +121,8 @@
   .item-tile-img.square img{border-radius:2px;}
   .item-tile-qty{position:absolute;right:-2px;top:-5px;z-index:2;min-width:36px;height:28px;padding:0 7px;border-radius:999px;background:var(--pink);color:#fff;font-size:14px;font-weight:800;display:flex;align-items:center;justify-content:center;box-shadow:0 2px 5px #0002;}
   .item-tile-name{margin-top:8px;font-size:11.5px;line-height:1.35;font-weight:650;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;overflow-wrap:anywhere;}
+  .sort-menu-popup button{display:flex;align-items:center;justify-content:space-between;width:100%;border:0;background:transparent;color:var(--ink);padding:10px;border-radius:10px;text-align:left;font-size:14px;}
+  .sort-menu-popup button.active{background:var(--surface-soft,var(--line));font-weight:700;}
   .crop-sheet{background:#111!important;color:#fff!important;}
   .crop-topbar{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:18px;}
   .crop-topbar strong{font-size:16px;}
@@ -571,6 +573,7 @@ let gridCols = Number(localStorage.getItem('oshikatsu_gridCols')) || 2;
 let sortMode = localStorage.getItem('oshikatsu_sortMode') || 'qty';
 let sortDirection = localStorage.getItem('oshikatsu_sortDirection') || 'desc';
 let seriesFilter = 'ALL';
+let unclassifiedOnly = localStorage.getItem('oshikatsu_unclassifiedOnly')==='true';
 let collapsedCategories = JSON.parse(localStorage.getItem('oshikatsu_collapsedCategories') || '{}');
 let itemImageShape = 'square';
 let bulkMoveMode = false;
@@ -714,6 +717,7 @@ function renderStats(){
 }
 
 function renderHome(){
+  document.getElementById('fabBtn').classList.remove('hidden');
   const main = document.getElementById('mainArea');
   if(state.characters.length===0){
     main.innerHTML = `<div class="empty"><div class="display">まだキャラがいないよ</div><div>右下の＋から推しキャラを登録してね</div></div>`;
@@ -841,7 +845,8 @@ function getFilteredSortedItems(chItems){
     const series = String(i.series||'').toLowerCase();
     const matchesText = !q || name.includes(q) || series.includes(q);
     const matchesSeries = seriesFilter==='ALL' || String(i.series||'').trim()===seriesFilter;
-    return matchesText && matchesSeries;
+    const matchesUnclassified = !unclassifiedOnly || !String(i.pageId||i.characterId||'').trim();
+    return matchesText && matchesSeries && matchesUnclassified;
   });
   const cmpName = (a,b)=>displayItemName(a).localeCompare(displayItemName(b),'ja');
   const valueFor=(i)=>({
@@ -897,6 +902,7 @@ function renderItemGridHtml(list){
         <span class="category-chevron">${collapsed?'›':'⌄'}</span><span class="category-title">${cat}</span>
         <span class="category-summary">${rows.length}種・${qty}個・${fmtYen(total)}</span>
       </button>
+      <button type="button" class="menubtn category-add-btn" data-add-category="${safe}" aria-label="${cat}にグッズを追加" style="width:34px;height:34px;font-size:22px;">＋</button>
     </div>`;
     if(!collapsed){
       out+=`<div class="item-grid" style="grid-template-columns:repeat(${gridCols},minmax(0,1fr));">`;
@@ -933,6 +939,7 @@ function updateItemGrid(){
 }
 
 function renderDetail(){
+  document.getElementById('fabBtn').classList.add('hidden');
   const main = document.getElementById('mainArea');
   const ch = state.characters.find(c=>c.id===view.characterId);
   const chItems = state.items.filter(i=>i.characterId===view.characterId);
@@ -951,11 +958,17 @@ function renderDetail(){
           <option value="ALL">すべてのシリーズ</option>
           ${Array.from(new Set(chItems.map(i=>String(i.series||'').trim()).filter(Boolean))).sort((a,b)=>a.localeCompare(b,'ja')).map(s=>`<option value="${s.replace(/&/g,'&amp;').replace(/"/g,'&quot;')}">${s}</option>`).join('')}
         </select>
-        <div style="display:flex;gap:6px;align-items:center;flex:1;min-width:0;">
-          <select id="sortModeSelect" class="sortselect" aria-label="並べ替え項目" style="flex:1;min-width:0;">
-            <option value="qty">個数</option><option value="name">商品名</option><option value="price">単価</option><option value="total">グッズ別総額</option><option value="year">発売年</option><option value="registered">登録順</option>
-          </select>
-          <button type="button" id="sortDirectionBtn" class="sortselect" style="width:auto;white-space:nowrap;" aria-label="昇順と降順を切り替え">↓ 降順</button>
+        <div class="sort-menu-wrap" style="position:relative;flex:1;min-width:0;">
+          <button type="button" id="sortMenuBtn" class="sortselect" style="width:100%;text-align:left;display:flex;align-items:center;justify-content:space-between;gap:8px;" aria-expanded="false">
+            <span>並び順：<strong id="sortCurrentLabel">個数</strong></span><span id="sortCurrentArrow">↓</span>
+          </button>
+          <div id="sortMenuPopup" class="sort-menu-popup hidden" role="menu" style="position:absolute;z-index:50;left:0;bottom:calc(100% + 8px);width:min(270px,82vw);padding:8px;border:1px solid var(--line);border-radius:18px;background:var(--panel,rgba(255,255,255,.96));box-shadow:0 10px 32px rgba(0,0,0,.16);backdrop-filter:blur(18px);">
+            <div style="font-size:11px;color:var(--ink-soft);padding:5px 10px;">並び順</div>
+            <div id="sortMenuOptions"></div>
+            <div style="border-top:1px solid var(--line);margin-top:6px;padding-top:6px;">
+              <label style="display:flex;align-items:center;justify-content:space-between;gap:12px;padding:8px 10px;font-size:13px;">ページ未分類のみ表示<input id="unclassifiedOnlyToggle" type="checkbox" style="width:18px;height:18px;"></label>
+            </div>
+          </div>
         </div>
         <div style="position:relative; flex:none;">
           <button class="menubtn" id="gridColsBtn" style="width:38px; height:38px; font-size:15px;" aria-label="表示列数を変更">⊞</button>
@@ -976,13 +989,31 @@ function renderDetail(){
 
   main.innerHTML = html;
   document.getElementById('searchInput').oninput = (e)=>{ filter.q = e.target.value; updateItemGrid(); };
-  const sortSelect = document.getElementById('sortModeSelect');
-  sortSelect.value = sortMode;
-  sortSelect.onchange = (e)=>{ sortMode=e.target.value;localStorage.setItem('oshikatsu_sortMode',sortMode);updateItemGrid(); };
-  const directionBtn=document.getElementById('sortDirectionBtn');
-  const syncDirection=()=>{directionBtn.textContent=sortDirection==='asc'?'↑ 昇順':'↓ 降順';directionBtn.setAttribute('aria-label',sortDirection==='asc'?'現在は昇順。タップで降順':'現在は降順。タップで昇順');};
-  syncDirection();
-  directionBtn.onclick=()=>{sortDirection=sortDirection==='asc'?'desc':'asc';localStorage.setItem('oshikatsu_sortDirection',sortDirection);syncDirection();updateItemGrid();};
+  const sortLabels={qty:'数量順',name:'名前順',price:'単価順',total:'グッズ別総額順',year:'発売年順',registered:'登録順'};
+  const sortPopup=document.getElementById('sortMenuPopup');
+  const sortBtn=document.getElementById('sortMenuBtn');
+  const sortOptions=document.getElementById('sortMenuOptions');
+  function renderSortMenu(){
+    document.getElementById('sortCurrentLabel').textContent=sortLabels[sortMode]||'数量順';
+    document.getElementById('sortCurrentArrow').textContent=sortDirection==='asc'?'↑':'↓';
+    sortOptions.innerHTML=Object.entries(sortLabels).map(([key,label])=>`<button type="button" role="menuitem" data-sort-key="${key}" class="${sortMode===key?'active':''}"><span>${label}</span><span>${sortMode===key?(sortDirection==='asc'?'↑':'↓'):''}</span></button>`).join('');
+    sortOptions.querySelectorAll('[data-sort-key]').forEach(btn=>btn.onclick=()=>{
+      const key=btn.dataset.sortKey;
+      if(sortMode===key){sortDirection=sortDirection==='asc'?'desc':'asc';}
+      else{sortMode=key;sortDirection=key==='name'?'asc':'desc';}
+      localStorage.setItem('oshikatsu_sortMode',sortMode);
+      localStorage.setItem('oshikatsu_sortDirection',sortDirection);
+      renderSortMenu();updateItemGrid();
+      // Reopen menu so the arrow and active item can be seen immediately.
+      sortPopup.classList.remove('hidden');sortBtn.setAttribute('aria-expanded','true');
+    });
+    const unc=document.getElementById('unclassifiedOnlyToggle');
+    unc.checked=unclassifiedOnly;
+    unc.onchange=()=>{unclassifiedOnly=unc.checked;localStorage.setItem('oshikatsu_unclassifiedOnly',String(unclassifiedOnly));updateItemGrid();};
+  }
+  renderSortMenu();
+  sortBtn.onclick=(e)=>{e.stopPropagation();sortPopup.classList.toggle('hidden');sortBtn.setAttribute('aria-expanded',String(!sortPopup.classList.contains('hidden')));};
+  document.addEventListener('click',(e)=>{if(!e.target.closest('.sort-menu-wrap')){sortPopup.classList.add('hidden');sortBtn.setAttribute('aria-expanded','false');}});
   const seriesFilterSelect=document.getElementById('seriesFilterSelect');
   seriesFilterSelect.value=seriesFilter;
   seriesFilterSelect.onchange=e=>{seriesFilter=e.target.value;updateItemGrid();};
