@@ -440,8 +440,15 @@
 
 <!-- Category totals overlay -->
 <div class="overlay" id="categoryTotalsOverlay"><div class="sheet">
-  <h2>カテゴリー別の購入総額</h2><div id="categoryTotalsBody"></div>
+  <h2>カテゴリー別の購入総額</h2><button class="btn ghost" id="categoryOrderSettingsBtn" type="button">カテゴリーの表示順を変更</button><div id="categoryTotalsBody"></div>
   <div class="sheet-actions"><button class="btn primary" id="categoryTotalsCloseBtn">閉じる</button></div>
+</div></div>
+<!-- Category order settings -->
+<div class="overlay" id="categoryOrderOverlay"><div class="sheet">
+  <h2>カテゴリー設定・表示順</h2>
+  <p style="font-size:13px;color:var(--ink-soft)">上下ボタンで並び順を変更できます。ここでの順番が一覧表示にも反映されます。</p>
+  <div id="categoryOrderList"></div>
+  <div class="sheet-actions"><button class="btn primary" id="categoryOrderCloseBtn">完了</button></div>
 </div></div>
 <!-- History overlay -->
 <div class="overlay" id="historyOverlay">
@@ -495,6 +502,14 @@ const COLORS = ['#FF6FA5','#6FCBFF','#FFD166','#9B8CFF','#5FD9A0','#FF9A6F'];
 const CATEGORY_LIST = [
   '缶バッジ','カード・紙類','アクリル','雑貨','ボイス'
 ];
+let categoryOrder = JSON.parse(localStorage.getItem('oshikatsu_categoryOrder') || 'null') || [...CATEGORY_LIST, '未分類'];
+function normalizeCategoryOrder(categories){
+  const unique=[...new Set([...categoryOrder,...categories])];
+  categoryOrder=unique.filter(Boolean);
+  localStorage.setItem('oshikatsu_categoryOrder',JSON.stringify(categoryOrder));
+  return categoryOrder;
+}
+
 
 /* イブラヒムの撮り下ろしビジュアル使用グッズ・企画名 → 発売年（シリーズ名入力時の自動サジェスト用） */
 
@@ -553,7 +568,9 @@ let state = { characters: [], items: [] };
 let view = { screen:'home', characterId:null };
 let filter = { q:'', category:'ALL', series:'ALL' };
 let gridCols = Number(localStorage.getItem('oshikatsu_gridCols')) || 2;
-let sortMode = localStorage.getItem('oshikatsu_sortMode') || 'qty-desc';
+let sortMode = localStorage.getItem('oshikatsu_sortMode') || 'qty';
+let sortDirection = localStorage.getItem('oshikatsu_sortDirection') || 'desc';
+let seriesFilter = 'ALL';
 let collapsedCategories = JSON.parse(localStorage.getItem('oshikatsu_collapsedCategories') || '{}');
 let itemImageShape = 'square';
 let bulkMoveMode = false;
@@ -822,21 +839,21 @@ function getFilteredSortedItems(chItems){
     const q = String(filter.q||'').toLowerCase();
     const name = String(i.name||'').toLowerCase();
     const series = String(i.series||'').toLowerCase();
-    return !q || name.includes(q) || series.includes(q);
+    const matchesText = !q || name.includes(q) || series.includes(q);
+    const matchesSeries = seriesFilter==='ALL' || String(i.series||'').trim()===seriesFilter;
+    return matchesText && matchesSeries;
   });
   const cmpName = (a,b)=>displayItemName(a).localeCompare(displayItemName(b),'ja');
+  const valueFor=(i)=>({
+    qty:Number(i.qty||0), name:displayItemName(i), price:Number(i.price||0),
+    total:Number(i.price||0)*Number(i.qty||0), year:Number(i.releaseYear||0),
+    registered:Number(i.createdAt?.seconds||i.createdAt||0)
+  });
   list = list.slice().sort((a,b)=>{
-    switch(sortMode){
-      case 'qty-asc': return Number(a.qty||0)-Number(b.qty||0) || cmpName(a,b);
-      case 'name-asc': return cmpName(a,b);
-      case 'price-desc': return Number(b.price||0)-Number(a.price||0) || cmpName(a,b);
-      case 'price-asc': return Number(a.price||0)-Number(b.price||0) || cmpName(a,b);
-      case 'total-desc': return Number(b.price||0)*Number(b.qty||0)-Number(a.price||0)*Number(a.qty||0) || cmpName(a,b);
-      case 'year-desc': return Number(b.releaseYear||0)-Number(a.releaseYear||0) || cmpName(a,b);
-      case 'year-asc': return Number(a.releaseYear||0)-Number(b.releaseYear||0) || cmpName(a,b);
-      case 'qty-desc':
-      default: return Number(b.qty||0)-Number(a.qty||0) || cmpName(a,b);
-    }
+    const av=valueFor(a)[sortMode]??0, bv=valueFor(b)[sortMode]??0;
+    let cmp=typeof av==='string'?av.localeCompare(bv,'ja'):av-bv;
+    if(sortDirection==='desc')cmp=-cmp;
+    return cmp || cmpName(a,b);
   });
   return list;
 }
@@ -866,10 +883,10 @@ function broadCategory(category, name='', series=''){
   return '雑貨';
 }
 function renderItemGridHtml(list){
-  if(list.length===0) return `<div class="empty"><div class="display">グッズがまだないよ</div><div>カテゴリの＋から追加してね</div></div>`;
+  if(list.length===0) return `<div class="empty"><div class="display">グッズがまだないよ</div><div>右下の＋から追加してね</div></div>`;
   const grouped=new Map();
   list.forEach(i=>{const cat=i.category||'未分類';if(!grouped.has(cat))grouped.set(cat,[]);grouped.get(cat).push(i);});
-  const preferred=['缶バッジ','カード・紙類','アクリル','雑貨','ボイス','未分類'];
+  const preferred=normalizeCategoryOrder([...grouped.keys()]);
   const ordered=[...grouped.keys()].sort((a,b)=>{const ai=preferred.indexOf(a),bi=preferred.indexOf(b);if(ai!==-1||bi!==-1)return(ai===-1?999:ai)-(bi===-1?999:bi);return a.localeCompare(b,'ja');});
   let out='';
   ordered.forEach(cat=>{
@@ -880,7 +897,6 @@ function renderItemGridHtml(list){
         <span class="category-chevron">${collapsed?'›':'⌄'}</span><span class="category-title">${cat}</span>
         <span class="category-summary">${rows.length}種・${qty}個・${fmtYen(total)}</span>
       </button>
-      <button type="button" class="menubtn category-add-btn" data-add-category="${safe}" aria-label="${cat}にグッズを追加" style="width:34px;height:34px;font-size:22px;">＋</button>
     </div>`;
     if(!collapsed){
       out+=`<div class="item-grid" style="grid-template-columns:repeat(${gridCols},minmax(0,1fr));">`;
@@ -928,19 +944,19 @@ function renderDetail(){
     <div class="toolbar">
       <button class="scanbtn" id="scanBtn" ${GEMINI_API_KEY ? '' : 'disabled'}>📷 レシート・注文控えから追加</button><button class="scanbtn" id="bulkMoveModeBtn" type="button">☑️ 一括移動</button>
       <div class="searchrow">
-        <input class="searchbox" id="searchInput" placeholder="商品名・シリーズ名で検索" value="${filter.q}">
+        <input class="searchbox" id="searchInput" placeholder="商品名で検索" value="${filter.q}">
       </div>
-      <div class="filterrow" style="display:flex; gap:8px; min-width:0; align-items:center; justify-content:space-between;">
-        <select id="sortModeSelect" class="sortselect" aria-label="グッズの並べ替え">
-          <option value="qty-desc">個数が多い順</option>
-          <option value="qty-asc">個数が少ない順</option>
-          <option value="name-asc">商品名順</option>
-          <option value="price-desc">単価が高い順</option>
-          <option value="price-asc">単価が安い順</option>
-          <option value="total-desc">小計が高い順</option>
-          <option value="year-desc">発売年が新しい順</option>
-          <option value="year-asc">発売年が古い順</option>
+      <div class="filterrow" style="display:flex; gap:8px; min-width:0; align-items:center; justify-content:space-between; flex-wrap:wrap;">
+        <select id="seriesFilterSelect" class="sortselect" aria-label="シリーズ名で絞り込み">
+          <option value="ALL">すべてのシリーズ</option>
+          ${Array.from(new Set(chItems.map(i=>String(i.series||'').trim()).filter(Boolean))).sort((a,b)=>a.localeCompare(b,'ja')).map(s=>`<option value="${s.replace(/&/g,'&amp;').replace(/"/g,'&quot;')}">${s}</option>`).join('')}
         </select>
+        <div style="display:flex;gap:6px;align-items:center;flex:1;min-width:0;">
+          <select id="sortModeSelect" class="sortselect" aria-label="並べ替え項目" style="flex:1;min-width:0;">
+            <option value="qty">個数</option><option value="name">商品名</option><option value="price">単価</option><option value="total">グッズ別総額</option><option value="year">発売年</option><option value="registered">登録順</option>
+          </select>
+          <button type="button" id="sortDirectionBtn" class="sortselect" style="width:auto;white-space:nowrap;" aria-label="昇順と降順を切り替え">↓ 降順</button>
+        </div>
         <div style="position:relative; flex:none;">
           <button class="menubtn" id="gridColsBtn" style="width:38px; height:38px; font-size:15px;" aria-label="表示列数を変更">⊞</button>
           <div class="gridcols-popup hidden" id="gridColsPopup">
@@ -962,7 +978,14 @@ function renderDetail(){
   document.getElementById('searchInput').oninput = (e)=>{ filter.q = e.target.value; updateItemGrid(); };
   const sortSelect = document.getElementById('sortModeSelect');
   sortSelect.value = sortMode;
-  sortSelect.onchange = (e)=>{ sortMode = e.target.value; localStorage.setItem('oshikatsu_sortMode', sortMode); updateItemGrid(); };
+  sortSelect.onchange = (e)=>{ sortMode=e.target.value;localStorage.setItem('oshikatsu_sortMode',sortMode);updateItemGrid(); };
+  const directionBtn=document.getElementById('sortDirectionBtn');
+  const syncDirection=()=>{directionBtn.textContent=sortDirection==='asc'?'↑ 昇順':'↓ 降順';directionBtn.setAttribute('aria-label',sortDirection==='asc'?'現在は昇順。タップで降順':'現在は降順。タップで昇順');};
+  syncDirection();
+  directionBtn.onclick=()=>{sortDirection=sortDirection==='asc'?'desc':'asc';localStorage.setItem('oshikatsu_sortDirection',sortDirection);syncDirection();updateItemGrid();};
+  const seriesFilterSelect=document.getElementById('seriesFilterSelect');
+  seriesFilterSelect.value=seriesFilter;
+  seriesFilterSelect.onchange=e=>{seriesFilter=e.target.value;updateItemGrid();};
   document.getElementById('gridColsBtn').onclick = (e)=>{
     e.stopPropagation();
     document.getElementById('gridColsPopup').classList.toggle('hidden');
@@ -976,7 +999,15 @@ function renderDetail(){
       renderDetail();
     };
   });
-  document.getElementById('itemGridArea').querySelectorAll('[data-edit]').forEach(card=>{ card.onclick = ()=>openItemModal(card.dataset.edit); });
+  document.getElementById('itemGridArea').querySelectorAll('[data-edit]').forEach(card=>{ card.onclick=(e)=>{
+    if(!bulkMoveMode){openItemModal(card.dataset.edit);return;}
+    e.preventDefault();
+    const id=card.dataset.itemId;
+    if(bulkSelectedIds.has(id))bulkSelectedIds.delete(id);else bulkSelectedIds.add(id);
+    updateItemGrid();
+    const count=document.getElementById('bulkSelectedCount');
+    if(count)count.textContent=`${bulkSelectedIds.size}件選択`;
+  }; });
   document.getElementById('itemGridArea').querySelectorAll('[data-toggle-category]').forEach(btn=>{
     btn.onclick=(e)=>{e.preventDefault();const cat=btn.dataset.toggleCategory;collapsedCategories[cat]=!collapsedCategories[cat];localStorage.setItem('oshikatsu_collapsedCategories',JSON.stringify(collapsedCategories));updateItemGrid();};
   });
@@ -1674,6 +1705,16 @@ document.getElementById('categoryTotalsBtn').onclick=()=>{
   openModal('categoryTotalsOverlay');
 };
 document.getElementById('categoryTotalsCloseBtn').onclick=()=>closeModal('categoryTotalsOverlay');
+function renderCategoryOrderSettings(){
+  const allCats=normalizeCategoryOrder([...CATEGORY_LIST,...state.items.map(i=>String(i.category||'').trim()).filter(Boolean)]);
+  const el=document.getElementById('categoryOrderList');
+  el.innerHTML=allCats.map((cat,i)=>`<div style="display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:1px solid var(--line)"><span style="flex:1">${cat}</span><button class="btn ghost" data-cat-up="${i}" ${i===0?'disabled':''} aria-label="${cat}を上へ">↑</button><button class="btn ghost" data-cat-down="${i}" ${i===allCats.length-1?'disabled':''} aria-label="${cat}を下へ">↓</button></div>`).join('');
+  el.querySelectorAll('[data-cat-up]').forEach(b=>b.onclick=()=>{const i=Number(b.dataset.catUp);if(i>0){[categoryOrder[i-1],categoryOrder[i]]=[categoryOrder[i],categoryOrder[i-1]];localStorage.setItem('oshikatsu_categoryOrder',JSON.stringify(categoryOrder));renderCategoryOrderSettings();if(document.getElementById('itemGridArea'))updateItemGrid();}});
+  el.querySelectorAll('[data-cat-down]').forEach(b=>b.onclick=()=>{const i=Number(b.dataset.catDown);if(i<categoryOrder.length-1){[categoryOrder[i+1],categoryOrder[i]]=[categoryOrder[i],categoryOrder[i+1]];localStorage.setItem('oshikatsu_categoryOrder',JSON.stringify(categoryOrder));renderCategoryOrderSettings();if(document.getElementById('itemGridArea'))updateItemGrid();}});
+}
+document.getElementById('categoryOrderSettingsBtn').onclick=()=>{renderCategoryOrderSettings();openModal('categoryOrderOverlay');};
+document.getElementById('categoryOrderCloseBtn').onclick=()=>closeModal('categoryOrderOverlay');
+
 document.getElementById('historyCloseBtn').onclick = ()=>closeModal('historyOverlay');
 document.addEventListener('click', ()=>{
   const p = document.getElementById('gridColsPopup');
