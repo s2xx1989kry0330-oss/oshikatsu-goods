@@ -1,0 +1,1494 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<title>推し活グッズ帳（クラウド版）</title>
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="グッズ帳">
+<meta name="theme-color" content="#7CA1F0">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icon-192.png">
+<link rel="icon" href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIxODAiIGhlaWdodD0iMTgwIj48cmVjdCB3aWR0aD0iMTgwIiBoZWlnaHQ9IjE4MCIgcng9IjQwIiBmaWxsPSIjRkY2RkE1Ii8+PGNpcmNsZSBjeD0iOTAiIGN5PSI5MCIgcj0iNTQiIGZpbGw9IiNGRkZGRkYiLz48Y2lyY2xlIGN4PSI5MCIgY3k9IjkwIiByPSI0MCIgZmlsbD0iI0ZGNkZBNSIvPjxjaXJjbGUgY3g9IjkwIiBjeT0iOTAiIHI9IjE0IiBmaWxsPSIjRkZGRkZGIi8+PC9zdmc+">
+<style>
+  :root{
+    --bg: #F3F7FF; --pink: #7CA1F0; --pink-deep: #5A82D9; --pink-soft: #E4ECFE;
+    --blue: #E4E841; --blue-soft: #FBFBD9; --gold: #E4E841; --gold-soft: #FBFBD9;
+    --ink: #232A3D; --ink-soft: #6E7A94; --card: #FFFFFF; --line: #DCE6FA;
+    --blue-ink: #8A8B1E; --gold-ink: #8A8B1E;
+    --radius: 20px; --shadow: 0 6px 20px rgba(60,90,150,0.10);
+  }
+  *{box-sizing:border-box; -webkit-tap-highlight-color: transparent;}
+  html,body{margin:0; padding:0; background:var(--bg); color:var(--ink); font-family: -apple-system, BlinkMacSystemFont, "Hiragino Kaku Gothic ProN", "Hiragino Sans", "Yu Gothic", Meiryo, sans-serif; overscroll-behavior-y:none;}
+  h1,h2,h3, .display{font-family:inherit; font-weight:900;}
+  button{font-family:inherit; cursor:pointer; transition:transform .1s ease;}
+  button:active{transform:scale(0.94);}
+  .item-card:active{transform:scale(0.97);}
+  input, select, textarea{font-family:inherit;}
+  ::-webkit-scrollbar{display:none;}
+
+  .app{max-width:520px; margin:0 auto; min-height:100vh; display:flex; flex-direction:column; position:relative;}
+
+  /* ---------- Sign-in screen ---------- */
+  .signin-screen{
+    min-height:100vh; display:flex; flex-direction:column; align-items:center; justify-content:center;
+    padding:40px 24px; text-align:center; gap:18px;
+  }
+  .signin-pin{
+    width:88px; height:88px; border-radius:50%; background:var(--card); box-shadow:var(--shadow), inset 0 0 0 3px #fff;
+    border:3px solid var(--pink); display:flex; align-items:center; justify-content:center; font-size:34px;
+  }
+  .signin-screen h1{font-size:22px; margin:0;}
+  .signin-screen p{font-size:13.5px; color:var(--ink-soft); line-height:1.7; max-width:320px; margin:0;}
+  .googlebtn{
+    display:flex; align-items:center; justify-content:center; gap:10px;
+    background:#fff; color:#3C4043; border:1px solid #DADCE0; border-radius:14px; padding:13px 22px;
+    font-size:14px; font-weight:700; box-shadow:0 2px 8px rgba(0,0,0,0.08);
+  }
+  .synctag{
+    display:inline-flex; align-items:center; gap:6px; font-size:11px; font-weight:700; color:var(--ink-soft);
+    background:var(--card); border:1px solid var(--line); padding:5px 12px; border-radius:999px;
+  }
+  .dot-live{width:7px; height:7px; border-radius:50%; background:#3DDC84; box-shadow:0 0 0 3px rgba(61,220,132,0.25);}
+
+  /* ---------- Header ---------- */
+  header{padding: calc(22px + env(safe-area-inset-top)) 18px 16px; position: sticky; top:0; z-index:20; background: linear-gradient(180deg, var(--bg) 70%, rgba(251,247,252,0));}
+  .titlebar{display:flex; align-items:center; justify-content:space-between; margin-bottom:14px; gap:8px;}
+  .titlebar h1{font-size:22px; margin:0; letter-spacing:.5px; display:flex; align-items:center; gap:8px;}
+  .titlebar h1 .pin{width:10px;height:10px;border-radius:50%; background:var(--pink); box-shadow:0 0 0 3px var(--pink-soft); display:inline-block;}
+  .backbtn{background:var(--card); border:1px solid var(--line); border-radius:14px; padding:8px 12px; font-size:13px; font-weight:700; color:var(--ink); display:flex; align-items:center; gap:4px; box-shadow:var(--shadow);}
+  .menubtn{background:var(--card); border:1px solid var(--line); border-radius:50%; width:38px; height:38px; display:flex; align-items:center; justify-content:center; box-shadow:var(--shadow); font-size:18px; flex:none;}
+  .headerbtns{display:flex; gap:8px; align-items:center;}
+
+  .stats{display:flex; gap:10px;}
+  .stat{flex:1; background:var(--card); border-radius:16px; padding:10px 12px; box-shadow:var(--shadow); border:1px solid var(--line);}
+  .stat .label{font-size:11px; color:var(--ink-soft); font-weight:700; margin-bottom:2px;}
+  .stat .value{font-size:18px; font-weight:900;}
+  .stat.pink .value{color:var(--pink-deep);}
+  .stat.gold .value{color:var(--gold-ink);}
+
+  main{flex:1; padding: 0 18px 100px;}
+
+  .badge-grid{display:grid; grid-template-columns: repeat(3, 1fr); gap:18px 14px; margin-top:10px;}
+  .badge{display:flex; flex-direction:column; align-items:center; gap:8px; position:relative; background:none; border:none; padding:0;}
+  .badge-pin{width:78px; height:78px; border-radius:50%; background: var(--card); box-shadow: var(--shadow), inset 0 0 0 3px #fff; display:flex; align-items:center; justify-content:center; position:relative; font-size:26px; font-weight:900; overflow:hidden; border: 3px solid var(--ring, var(--pink));}
+  .badge-pin::before{content:''; position:absolute; top:6px; left:14px; width:16px; height:8px; border-radius:50%; background:rgba(255,255,255,0.55); transform:rotate(-20deg);}
+  .badge-pin img{width:100%;height:100%;object-fit:cover;}
+  .badge-name{font-size:12.5px; font-weight:700; text-align:center; line-height:1.3; max-width:84px;}
+  .badge-count{font-size:10.5px; color:var(--ink-soft); font-weight:700;}
+  .badge-add .badge-pin{border-style:dashed; color:var(--ink-soft); background:var(--card);}
+  .badge{touch-action:pan-y;}
+  .badge.dragging{opacity:0.3;}
+  .drag-ghost{position:fixed; pointer-events:none; z-index:200; width:78px; display:flex; flex-direction:column; align-items:center; gap:8px; transform:translate(-50%,-50%) scale(1.08); filter:drop-shadow(0 10px 16px rgba(0,0,0,0.25));}
+
+  .empty{text-align:center; padding:60px 20px; color:var(--ink-soft);}
+  .empty .display{font-size:20px; color:var(--ink); margin-bottom:8px;}
+
+  .toolbar{display:flex; flex-direction:column; gap:10px; margin-bottom:14px;}
+  .searchrow{display:flex; gap:8px;}
+  .searchbox{flex:1; background:var(--card); border:1px solid var(--line); border-radius:14px; padding:10px 14px; font-size:16px; box-shadow:var(--shadow); color:var(--ink);}
+  .sortselect{background:var(--card) url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="%238a7f92"><path d="M7 10l5 5 5-5z"/></svg>') no-repeat right 10px center/16px; background-color:var(--card); border:1px solid var(--line); border-radius:14px; padding:10px 30px 10px 10px; font-size:16px; box-shadow:var(--shadow); font-weight:700; color:var(--ink); -webkit-appearance:none; appearance:none; outline:none; forced-color-adjust:none;}
+  .sortselect:focus{border-color:var(--pink); outline:none;}
+  .gridcols-popup{position:absolute; top:44px; right:0; background:var(--card); border:1px solid var(--line); border-radius:14px; box-shadow:var(--shadow); padding:6px; z-index:15; display:flex; flex-direction:column; min-width:150px;}
+  .gridcols-popup button{background:none; border:none; text-align:left; padding:10px 12px; font-size:13px; font-weight:700; color:var(--ink); border-radius:10px; width:100%;}
+  .gridcols-popup button:active{background:var(--pink-soft);}
+  .gridcols-popup button:disabled{opacity:0.35;}
+  .history-row{display:flex; gap:12px; align-items:center; padding:10px 0; border-bottom:1px solid var(--line); cursor:pointer;}
+  .history-row:last-child{border-bottom:none;}
+  .history-thumb{width:52px; height:52px; border-radius:12px; overflow:hidden; flex:none; background:var(--pink-soft); display:flex; align-items:center; justify-content:center; font-size:20px;}
+  .history-thumb img{width:100%; height:100%; object-fit:cover;}
+  .history-info{flex:1; min-width:0;}
+  .history-name{font-size:13.5px; font-weight:700; line-height:1.3; margin-bottom:3px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
+  .history-sub{font-size:11.5px; color:var(--ink-soft);}
+  .history-char{font-size:10px; color:var(--ink-soft); background:var(--line); padding:1px 7px; border-radius:999px; flex:none;}
+  @media (forced-colors: active){
+    .sortselect{forced-color-adjust:none; background-color:var(--card) !important; color:var(--ink) !important; border:1px solid var(--line) !important;}
+  }
+
+  .item-grid{display:grid; grid-template-columns: 1fr 1fr; gap:14px; margin-top:4px;}
+  .item-card{background:var(--card); border-radius:var(--radius); box-shadow:var(--shadow); overflow:hidden; border:1px solid var(--line); display:flex; flex-direction:column; text-align:left; position:relative; cursor:pointer; transition:transform .1s ease;}
+  .item-img{width:100%; aspect-ratio:1/1; background:var(--pink-soft); display:flex; align-items:center; justify-content:center; overflow:hidden; font-size:28px; position:relative;}
+  .item-img img{width:100%; height:100%; object-fit:cover;}
+  .item-body{padding:10px 12px 12px;}
+  .item-cat{display:inline-block; font-size:10px; font-weight:700; padding:2px 8px; border-radius:999px; background:var(--blue-soft); color:var(--blue-ink); margin-bottom:6px;}
+  .item-name{font-size:13.5px; font-weight:700; line-height:1.3; margin-bottom:6px; min-height:34px;}
+  .item-price-row{display:flex; justify-content:space-between; align-items:baseline;}
+  .item-price{font-size:15px; font-weight:900; color:var(--pink-deep);}
+  .item-qty{font-size:12px; color:var(--ink-soft); font-weight:700;}
+  .item-sub{font-size:10.5px; color:var(--ink-soft); margin-top:4px;}
+
+  .fab{position:fixed; right:20px; bottom:calc(26px + env(safe-area-inset-bottom)); width:58px; height:58px; border-radius:50%; background: var(--pink); color:#fff; border:none; font-size:28px; box-shadow:0 10px 24px rgba(124,161,240,0.45); display:flex; align-items:center; justify-content:center; z-index:30;}
+
+  .backupbar{display:flex; gap:8px; padding:6px 0 4px;}
+  .backupbtn{flex:1; background:var(--card); border:1px solid var(--line); border-radius:14px; padding:9px; font-size:12px; font-weight:700; box-shadow:var(--shadow); display:flex; align-items:center; justify-content:center; gap:6px; color:var(--ink);}
+
+  .overlay{position:fixed; inset:0; background:rgba(43,36,56,0.45); z-index:50; display:none; align-items:flex-end; justify-content:center;}
+  .overlay.show{display:flex;}
+  .sheet{background:var(--bg); width:100%; max-width:520px; border-radius:24px 24px 0 0; max-height:92vh; overflow-y:auto; padding:20px 20px calc(30px + env(safe-area-inset-bottom)); animation: slideup .25s ease;}
+  @keyframes slideup{from{transform:translateY(30px); opacity:0;} to{transform:translateY(0); opacity:1;}}
+  .sheet h2{font-size:19px; margin:0 0 16px;}
+  .field{margin-bottom:14px;}
+  .field label{display:block; font-size:12px; font-weight:700; color:var(--ink-soft); margin-bottom:6px;}
+  .field input[type=text], .field input[type=number], .field input[type=date], .field select, .field textarea{width:100%; padding:11px 14px; border-radius:14px; border:1px solid var(--line); background:var(--card); font-size:16px; color:var(--ink);}
+  .field textarea{resize:vertical; min-height:60px;}
+  .imgpick{width:100%; aspect-ratio:1.6/1; border-radius:16px; border:2px dashed var(--line); background:var(--card); display:flex; flex-direction:column; align-items:center; justify-content:center; color:var(--ink-soft); font-size:13px; gap:6px; overflow:hidden; position:relative;}
+  .imgpick img{position:absolute; inset:0; width:100%; height:100%; object-fit:cover;}
+  .multi-img-row{display:flex; gap:10px; flex-wrap:wrap;}
+  .multi-img-thumb{position:relative; width:84px; height:84px; border-radius:14px; overflow:hidden; border:1px solid var(--line);}
+  .multi-img-thumb img{width:100%; height:100%; object-fit:cover;}
+  .multi-img-thumb .rm-btn{position:absolute; top:3px; right:3px; width:20px; height:20px; border-radius:50%; background:rgba(20,18,28,0.7); color:#fff; border:none; font-size:12px; display:flex; align-items:center; justify-content:center;}
+  .multi-img-add{width:84px; height:84px; border-radius:14px; border:2px dashed var(--line); background:var(--card); display:flex; align-items:center; justify-content:center; font-size:24px; color:var(--ink-soft);}
+  .item-img-badge{position:absolute; bottom:6px; right:6px; background:rgba(20,18,28,0.75); color:#fff; font-size:10px; font-weight:700; padding:2px 7px; border-radius:999px;}
+  .colorrow{display:flex; gap:10px; flex-wrap:wrap;}
+  .colordot{width:34px; height:34px; border-radius:50%; border:3px solid transparent;}
+  .colordot.sel{border-color:var(--ink);}
+  .hexrow{display:flex; align-items:center; gap:10px; margin-top:10px;}
+  .hexpreview{width:34px; height:34px; border-radius:50%; border:2px solid var(--line); flex:none;}
+  .hexrow input{flex:1; padding:10px 12px; border-radius:12px; border:1px solid var(--line); background:var(--card); font-size:16px; color:var(--ink); text-transform:uppercase;}
+  .sheet-actions{display:flex; gap:10px; margin-top:8px;}
+  .btn{flex:1; padding:13px; border-radius:14px; border:none; font-weight:700; font-size:14px;}
+  .btn.primary{background:var(--pink); color:#fff;}
+  .btn.ghost{background:var(--card); border:1px solid var(--line); color:var(--ink);}
+  .btn.danger{background:#FFE6E6; color:#C0392B;}
+  .icon-del-btn{width:36px; height:36px; border-radius:50%; border:1px solid #FFE6E6; background:#FFF5F5; color:#C0392B; font-size:16px; display:flex; align-items:center; justify-content:center; flex-shrink:0;}
+  .hidden{display:none !important;}
+  input[type=file]{display:none;}
+  .modal-stepper{display:flex; align-items:center; gap:8px;}
+  .modal-qty-btn{width:38px; height:38px; flex:none; border-radius:12px; border:1px solid var(--line); background:var(--pink-soft); color:var(--pink-deep); font-size:18px; font-weight:900; display:flex; align-items:center; justify-content:center;}
+  .modal-qty-btn:active{background:var(--pink); color:#fff;}
+  #itemQtyInput{text-align:center;}
+  .item-status-tag{display:inline-block; font-size:10px; font-weight:700; padding:2px 8px; border-radius:999px; background:var(--gold-soft); color:var(--gold-ink); margin-bottom:6px; margin-left:4px;}
+  .toast{position:fixed; bottom:100px; left:50%; transform:translateX(-50%); background:rgba(20,18,28,0.94); color:#fff; padding:10px 18px; border-radius:999px; font-size:13px; font-weight:700; z-index:80; opacity:0; transition:opacity .25s;}
+  .toast.show{opacity:1;}
+  .searchsitebtn{margin-top:8px; width:100%; padding:9px; border-radius:12px; border:1px solid var(--line); background:var(--blue-soft); color:var(--blue-ink); font-size:12.5px; font-weight:700;}
+  .suggestrow{display:flex; gap:8px; flex-wrap:wrap; margin-top:8px;}
+  .suggest-chip{padding:6px 12px; border-radius:999px; font-size:12px; font-weight:700; background:var(--gold-soft); color:var(--gold-ink); border:1px solid var(--gold);}
+  .scanbtn{width:100%; margin-bottom:10px; background:var(--card); border:1px solid var(--line); border-radius:14px; padding:11px; font-size:13px; font-weight:700; color:var(--ink); box-shadow:var(--shadow); display:flex; align-items:center; justify-content:center; gap:8px;}
+  .scanbtn:disabled{opacity:0.4;}
+  .scan-progress{font-size:12px; color:var(--ink-soft); font-weight:700; text-align:center; margin-bottom:10px;}
+  .scan-field-row{display:flex; gap:10px;}
+  .spinner{width:22px; height:22px; border-radius:50%; border:3px solid var(--line); border-top-color:var(--pink); animation:spin .7s linear infinite;}
+  @keyframes spin{to{transform:rotate(360deg);}}
+</style>
+</head>
+<body>
+
+<!-- Sign-in screen -->
+<div class="signin-screen" id="signinScreen">
+  <div class="signin-pin">🎀</div>
+  <h1>推し活グッズ帳</h1>
+  <p>Googleアカウントでログインすると、データがクラウドに自動保存されて、他の端末でも同じコレクションをリアルタイムに見られるようになるよ。</p>
+  <button class="googlebtn" id="googleSignInBtn">
+    <svg width="18" height="18" viewBox="0 0 48 48"><path fill="#FFC107" d="M43.6 20.5H42V20H24v8h11.3c-1.6 4.7-6.1 8-11.3 8-6.6 0-12-5.4-12-12s5.4-12 12-12c3.1 0 5.8 1.1 8 3l6-6C33.6 5.1 29 3 24 3 12.4 3 3 12.4 3 24s9.4 21 21 21 21-9.4 21-21c0-1.4-.1-2.7-.4-3.5z"/><path fill="#FF3D00" d="M6.3 14.7l6.6 4.8C14.6 15.1 18.9 12 24 12c3.1 0 5.8 1.1 8 3l6-6C33.6 5.1 29 3 24 3 16.3 3 9.7 7.4 6.3 14.7z"/><path fill="#4CAF50" d="M24 45c5 0 9.5-1.9 12.9-5.1l-6-4.9c-2 1.4-4.6 2.3-6.9 2.3-5.2 0-9.6-3.3-11.3-8l-6.5 5C9.6 40.6 16.2 45 24 45z"/><path fill="#1976D2" d="M43.6 20.5H42V20H24v8h11.3c-.8 2.3-2.2 4.2-4.1 5.6l6 4.9C40.6 35.9 44 30.4 44 24c0-1.4-.1-2.7-.4-3.5z"/></svg>
+    Googleでログイン
+  </button>
+  <span class="synctag" id="signinLoadingTag" style="display:none;"><div class="spinner" style="width:12px;height:12px;border-width:2px;"></div> 接続中…</span>
+</div>
+
+<div class="app hidden" id="appRoot">
+  <header>
+    <div class="titlebar" id="titlebar">
+      <h1 id="pageTitle"><span class="pin"></span>推し活グッズ帳</h1>
+      <div class="headerbtns">
+        <span class="synctag"><span class="dot-live"></span>同期中</span>
+        <button class="menubtn" id="backupOpenBtn">⋮</button>
+      </div>
+    </div>
+    <div class="stats" id="statsRow"></div>
+  </header>
+  <main id="mainArea"></main>
+</div>
+
+<button class="fab hidden" id="fabBtn">＋</button>
+<div class="toast" id="toast"></div>
+
+<!-- Character modal -->
+<div class="overlay" id="charOverlay">
+  <div class="sheet">
+    <h2 id="charModalTitle">キャラを追加</h2>
+    <div class="field">
+      <label>アイコン画像（任意）</label>
+      <div class="imgpick" id="charImgPick"><span id="charImgPickLabel">タップして画像を選ぶ</span></div>
+      <input type="file" id="charImgInput" accept="image/*">
+    </div>
+    <div class="field">
+      <label>キャラクター名</label>
+      <input type="text" id="charNameInput" placeholder="例）衛藤桐也">
+    </div>
+    <div class="field">
+      <label>公式通販URL（任意・商品検索に使うよ）</label>
+      <input type="text" id="charShopUrlInput" placeholder="例）https://shop.nijisanji.jp/...">
+    </div>
+    <div class="field">
+      <label>バッジカラー</label>
+      <div class="colorrow" id="colorRow"></div>
+      <div class="hexrow">
+        <div class="hexpreview" id="hexPreview"></div>
+        <input type="text" id="charHexInput" placeholder="#FF6FA5" maxlength="7">
+      </div>
+    </div>
+    <div class="sheet-actions">
+      <button class="btn ghost" id="charCancelBtn">キャンセル</button>
+      <button class="btn primary" id="charSaveBtn">保存する</button>
+    </div>
+    <div class="sheet-actions" id="charDeleteRow" style="margin-top:4px;">
+      <button class="btn danger" id="charDeleteBtn">このキャラを削除</button>
+    </div>
+  </div>
+</div>
+
+<!-- Item modal -->
+<div class="overlay" id="itemOverlay">
+  <div class="sheet">
+    <div style="display:flex; justify-content:space-between; align-items:center;">
+      <h2 id="itemModalTitle">グッズを追加</h2>
+      <button type="button" class="icon-del-btn hidden" id="itemDeleteBtn" aria-label="このグッズを削除">🗑</button>
+    </div>
+    <div class="field">
+      <label>商品画像（複数枚OK・任意）</label>
+      <div class="multi-img-row" id="itemImgRow"></div>
+      <input type="file" id="itemImgInput" accept="image/*" multiple>
+    </div>
+    <div class="field">
+      <label>商品名</label>
+      <input type="text" id="itemNameInput" placeholder="例）【VSせめよん】ランダム缶バッジ">
+      <button type="button" class="searchsitebtn hidden" id="searchSiteBtn">🔍 公式サイト内で調べる</button>
+      <div class="suggestrow hidden" id="nameSuggestRow"></div>
+    </div>
+    <div class="field" style="display:none">
+      <label>シリーズ／企画名（任意・自由入力）</label>
+      <input type="text" id="itemSeriesInput" list="seriesList" placeholder="例）VSせめよん">
+      <datalist id="seriesList"></datalist>
+    </div>
+    <div class="field">
+      <label>カテゴリ（任意・自由入力）</label>
+      <input type="text" id="itemCatInput" list="catList" placeholder="例）缶バッジ・カード・紙類・アクリル・雑貨・ボイス">
+      <datalist id="catList"></datalist>
+    </div>
+    <div class="field" style="display:flex; gap:10px;">
+      <div style="flex:1;">
+        <label>価格（円）</label>
+        <input type="number" id="itemPriceInput" placeholder="0" inputmode="numeric">
+      </div>
+      <div style="flex:1;">
+        <label>個数</label>
+        <div class="modal-stepper">
+          <button type="button" class="modal-qty-btn" id="modalQtyMinus">−</button>
+          <input type="number" id="itemQtyInput" placeholder="1" inputmode="numeric" value="1">
+          <button type="button" class="modal-qty-btn" id="modalQtyPlus">＋</button>
+        </div>
+      </div>
+    </div>
+    <div class="field">
+      <label>発売年（任意）</label>
+      <input type="number" id="itemYearInput" placeholder="例）2023" inputmode="numeric" min="2000" max="2100">
+    </div>
+    <div class="field">
+      <label>メモ（任意）</label>
+      <textarea id="itemMemoInput" placeholder="状態やその他メモ"></textarea>
+    </div>
+    <div class="sheet-actions">
+      <button class="btn ghost" id="itemCancelBtn">キャンセル</button>
+      <button class="btn primary" id="itemSaveBtn">保存する</button>
+    </div>
+  </div>
+</div>
+
+<!-- Settings modal -->
+<div class="overlay" id="backupOverlay">
+  <div class="sheet">
+    <h2>設定</h2>
+    <p style="font-size:13px; color:var(--ink-soft); line-height:1.6;">
+      データはGoogleアカウントに紐づけてクラウドに自動保存されてるよ。他の端末で同じアカウントでログインすれば、追加した瞬間にそのまま反映される。
+    </p>
+    <div class="backupbar">
+      <button class="backupbtn" id="historyOpenBtn">🕘 履歴を見る</button>
+    </div>
+    <p style="font-size:11.5px; color:var(--ink-soft); line-height:1.5;">
+      登録したグッズを新しい順に一覧で見れるよ。タップすると編集画面が開く。
+    </p>
+    <div class="backupbar">
+      <button class="backupbtn" id="exportBtn">⬇️ 念のためJSONで書き出す</button>
+    </div>
+    <div class="backupbar">
+      <button class="backupbtn" id="importBtn">⬆️ JSONバックアップを取り込む</button>
+      <input type="file" id="importFileInput" accept=".json,application/json">
+    </div>
+    <p style="font-size:11.5px; color:var(--ink-soft); line-height:1.5;">
+      JSONバックアップのキャラ・グッズをクラウドに反映するよ。同じIDのデータは更新されるため、先に念のため書き出してね。
+    </p>
+    <div class="backupbar">
+      <button class="backupbtn" id="migrateSeriesBtn">🪄 シリーズ名を商品名へ一括変換</button>
+    </div>
+    <p style="font-size:11.5px; color:var(--ink-soft); line-height:1.5;">
+      既存グッズの「シリーズ」を商品名の先頭に【シリーズ名】として移し、シリーズ欄を空にするよ。すでに【】付きの商品名は二重に付けないよ。
+    </p>
+    <div class="backupbar">
+      <button class="backupbtn" id="fillYearBtn">📅 イブラヒムの発売年を自動入力</button>
+    </div>
+    <p style="font-size:11.5px; color:var(--ink-soft); line-height:1.5;">
+      イブラヒムのグッズのうち、発売年が空欄でシリーズ名が登録済みのものだけ、シリーズ名から発売年を推測して入力するよ。すでに入力済みのものは上書きしません。
+    </p>
+
+    <div class="sheet-actions" style="margin-top:16px;">
+      <button class="btn primary" id="backupCloseBtn">閉じる</button>
+    </div>
+  </div>
+</div>
+
+<!-- Receipt scan overlay -->
+<input type="file" id="scanFileInput" accept="image/*">
+<div class="overlay" id="scanOverlay">
+  <div class="sheet">
+    <h2 id="scanTitle">読み取り中…</h2>
+    <div id="scanBody"></div>
+    <div class="sheet-actions">
+      <button class="btn ghost" id="scanCloseBtn">閉じる</button>
+    </div>
+  </div>
+</div>
+
+<!-- History overlay -->
+<div class="overlay" id="historyOverlay">
+  <div class="sheet">
+    <h2>履歴</h2>
+    <p style="font-size:12px; color:var(--ink-soft); margin:-8px 0 12px;">登録した順に新しいものから並んでるよ</p>
+    <div id="historyBody"></div>
+    <div class="sheet-actions" style="margin-top:8px;">
+      <button class="btn primary" id="historyCloseBtn">閉じる</button>
+    </div>
+  </div>
+</div>
+
+<script type="module">
+/* =====================================================================
+   Firebase 設定：ここに自分のプロジェクトの値を入れてください
+   Firebase コンソール > プロジェクトの設定 > 全般 > マイアプリ で確認できます
+   ===================================================================== */
+const firebaseConfig = {
+  apiKey: "AIzaSyC6wAmj0-5j0vE1n-zwBwPwzMaAry4QmAI",
+  authDomain: "oshikatsu-goods.firebaseapp.com",
+  projectId: "oshikatsu-goods",
+  storageBucket: "oshikatsu-goods.firebasestorage.app",
+  messagingSenderId: "979698953003",
+  appId: "1:979698953003:web:5e363c5331d99c9eab736e"
+};
+
+/* レシート読み取り機能を使う場合はここにGemini APIキーを入れてください
+   （Google AI Studio: https://aistudio.google.com/apikey で無料取得できます）
+   使わない場合は空文字のままでOK（レシート読み取りボタンは自動で無効表示になります） */
+const GEMINI_API_KEY = "AQ.Ab8RN6JR-pU7VS_1CJp0OKZUu_LlDaPZCt6yXHMSup5_MT2zqQ";
+
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+import {
+  getAuth, GoogleAuthProvider, signInWithPopup, onAuthStateChanged
+} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+import {
+  getFirestore, collection, doc, addDoc, setDoc, updateDoc, deleteDoc,
+  onSnapshot, query, serverTimestamp
+} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+const fbApp = initializeApp(firebaseConfig);
+const auth = getAuth(fbApp);
+const db = getFirestore(fbApp);
+
+let uid = null;
+let unsubChars = null, unsubItems = null;
+
+/* ---------------- App state ---------------- */
+const COLORS = ['#FF6FA5','#6FCBFF','#FFD166','#9B8CFF','#5FD9A0','#FF9A6F'];
+const CATEGORY_LIST = [
+  '缶バッジ','カード・紙類','アクリル','雑貨','ボイス'
+];
+
+/* イブラヒムの撮り下ろしビジュアル使用グッズ・企画名 → 発売年（シリーズ名入力時の自動サジェスト用） */
+
+const IBRAHIM_SERIES_YEAR = {
+  'にじフェス2021グッズ':2021,'にじさんじホワイトデーグッズ2021':2021,'にじさんじドットアートグッズ':2021,
+  'カーテン魂限定オリジナルグッズ':2021,'カーテン魂オリジナルグッズ':2021,'イブラヒム誕生日グッズ2021':2021,
+  'にじさんじDMMスクラッチ第五弾':2021,'にじさんじコロこっと':2021,'にじさんじのB級バラエティ(仮) イブラヒムサウンドキーホルダーセット':2021,
+  'にじさんじFashion Goods':2021,'NIJI GRAFFITI':2021,'にじさんじチップスVol2':2021,'にじさんじ × e-zakkamania':2021,
+  'にじさんじミニフィギュアコレクション第3弾':2021,
+  'にじさんじ新ビジュアルグッズ第13弾':2022,'にじさんじチョコレート ver3':2022,'にじさんじ4th Anniversaryグッズ':2022,
+  'にじさんじゆるパレット':2022,'WhiteDay Gift':2022,'OGL × vaultroom':2022,'にじさんじオードパルファム':2022,
+  'にじさんじライバーモデルTシャツ第9弾':2022,'Welcome Goods':2022,'にじさんじCAFE in SWEETS PARADISE':2022,
+  'にじさんじデフォルメグッズ':2022,'にじさんじジューンブライド2022グッズ':2022,'イブラヒム誕生日グッズ2022':2022,
+  'セ・リーグ6球団 × にじさんじ':2022,'にじさんじラバーマスコットコレクション':2022,'にじフェス2022グッズ':2022,
+  'にじさんじ × ウェンディーズ ファーストキッチンコラボ':2022,'にじさんじ卓上カレンダー2023':2022,
+  'にじさんじ5th Anniversaryグッズ':2023,'にじさんじタロットグッズ':2023,'vaultroom × ibrahim':2023,'にじさんじ × GiGO':2023,
+  'にじさんじチャイナスタイルグッズ':2023,'Ibrahim 3rd Anniversary Animation Goods':2023,'くじスクエア にじさんじ':2023,
+  'にじさんじ甲子園2023応援グッズ':2023,'イブラヒム誕生日グッズ2023':2023,'にじぱぺっとシリーズ vol.5':2023,
+  'NIJISANJI SUMMER COLLECTION 2023':2023,'にじさんじ × NEW ERA':2023,'にじぱぺっとグッズ2':2023,'にじさんじチップスVol.5':2023,
+  'にじフェス2023グッズ':2023,'UN-DIMENSION vol.3':2023,'ストリートファイター6 × にじさんじコラボくじ':2023,
+  'にじさんじ × 極楽湯':2023,'にじさんじウィンターデート2023グッズ':2023,'にじさんじフレグランス vol.3':2023,
+  'にじさんじ×まねきねこ Winter Music':2024,'にじTグッズ':2024,'にじさんじCafe IN SWEETS PARADICE':2024,
+  'にじさんじのB級バラエティ的ワイン':2024,'NIJIベア vol.3':2024,'2024シーズン J1全20クラブ×にじさんじ':2024,
+  'にじさんじ ウェファーチョコ':2024,'NIJISANJI Battle Mode Type：Kuzuha＆Ibrahim':2024,'イブラヒム誕生日グッズ2024':2024,
+  'にじさんじ Christmas Wear':2024,'AVIOT × イブラヒム コラボワイヤレスイヤホン':2024,'にじさんじノスタルジアコレクション':2024,
+  'にじさんじお食事グッズ4':2024,'NIJIベア ぬいぐるみキーホルダー':2024,'にじさんじおせち2025':2024,
+  'にじさんじテラリウムグッズ':2024,'にじフェス2025グッズ':2024,'にじさんじ歌謡祭2024':2024,
+  'NIJI HOLICグッズ':2025,'MEIFU 5th Anniversaryグッズ':2025,'にじさんじ7th Anniversaryグッズ':2025,
+  'にじぱぺっと共通衣装シリーズ':2025,'ART OF NIJISANJI':2025,'にじフェス2025 ブロマイドセット':2025,
+  'ダーツハイブ × にじさんじ':2025,'2時だとか 1st LIVEグッズ':2025,'デュエル・マスターズ':2025,'にじさんじ × ふもコレ':2025,'2時だとか「狂騒RIOT」CD購入特典':2025,
+  'にじぱぺっとコンセプトシリーズ vol.10':2025,'にじさんじ甲子園2025グッズ':2025,'イブラヒム誕生日グッズ2025':2025,
+  'Standard Goods Vol.5':2025,'GOOOMiiES グッズ':2025,'にじさんじノスタルジアコレクション2025':2025,
+  'にじぱぺフォトグッズ Vol.2':2025,'イブラヒム 1/7スケールフィギュア':2025,'GRAY×ACCENT グッズ':2025,
+  'ゆかいなパンやさん グッズ':2025,'にじフェス2026 オリジナルグッズ':2025,
+  'にじさんじ 8th Anniversaryグッズ':2026,'にじさんじ 8th with cake':2026,'にじさんじウエハース2':2026,
+  'CharmAid にじさんじ':2026,'びっくらたまご つむまる にじさんじ vol.4':2026,'にじぬい共通衣装シリーズ':2026,
+  'VSせめよん':2026,'GALLERIAコラボモデルPC':2026,'チョコエッグプラス × にじさんじ第2弾':2026,
+  'にじさんじぬいモード マスコットチャーム':2026,'Rainy Day Laundry':2026
+};
+function guessReleaseYear(seriesText){
+  if(!seriesText) return null;
+  const norm = s => s.replace(/[×＆&\s　・]/g,'').toLowerCase();
+  const target = norm(seriesText);
+  if(!target) return null;
+  let best = null, bestLen = 0;
+  for(const key in IBRAHIM_SERIES_YEAR){
+    const nk = norm(key);
+    if(target.includes(nk) || nk.includes(target)){
+      if(nk.length > bestLen){ bestLen = nk.length; best = IBRAHIM_SERIES_YEAR[key]; }
+    }
+  }
+  return best;
+}
+
+let state = { characters: [], items: [] };
+let view = { screen:'home', characterId:null };
+let filter = { q:'', category:'ALL', series:'ALL' };
+let gridCols = Number(localStorage.getItem('oshikatsu_gridCols')) || 2;
+let dragCtx = null;
+let justDragged = false;
+
+function uidGen(){ return Date.now().toString(36)+Math.random().toString(36).slice(2,7); }
+function fmtYen(n){ return '¥' + Number(n||0).toLocaleString('ja-JP'); }
+function showToast(msg){
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.classList.add('show');
+  if(navigator.vibrate){ try{ navigator.vibrate(10); }catch(e){} }
+  setTimeout(()=>t.classList.remove('show'), 1800);
+}
+/* 画像はFirebase Storageを使わず、圧縮してFirestoreに直接保存する（無料枠のみで完結させるため） */
+function compressImageFile(file, maxDim=640, quality=0.65){
+  return new Promise((resolve, reject)=>{
+    const reader = new FileReader();
+    reader.onload = (e)=>{
+      const img = new Image();
+      img.onload = ()=>{
+        let w = img.width, h = img.height;
+        if(w > maxDim || h > maxDim){
+          if(w >= h){ h = Math.round(h * maxDim / w); w = maxDim; }
+          else { w = Math.round(w * maxDim / h); h = maxDim; }
+        }
+        const canvas = document.createElement('canvas');
+        canvas.width = w; canvas.height = h;
+        canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+        resolve(canvas.toDataURL('image/jpeg', quality));
+      };
+      img.onerror = ()=> reject(new Error('画像の読み込みに失敗したよ'));
+      img.src = e.target.result;
+    };
+    reader.onerror = ()=> reject(new Error('ファイルの読み込みに失敗したよ'));
+    reader.readAsDataURL(file);
+  });
+}
+function totalImageBytes(images){
+  return images.reduce((s,img)=> s + (img ? img.length : 0), 0);
+}
+const MAX_IMAGE_BYTES = 650000; // Firestoreの1ドキュメント1MB制限に対する安全マージン
+
+/* ---------------- Auth ---------------- */
+document.getElementById('googleSignInBtn').onclick = async ()=>{
+  document.getElementById('signinLoadingTag').style.display = 'inline-flex';
+  try{
+    const provider = new GoogleAuthProvider();
+    await signInWithPopup(auth, provider);
+  }catch(e){
+    document.getElementById('signinLoadingTag').style.display = 'none';
+    showToast('ログインに失敗したよ: ' + e.message);
+  }
+};
+
+onAuthStateChanged(auth, (user)=>{
+  if(user){
+    uid = user.uid;
+    document.getElementById('signinScreen').classList.add('hidden');
+    document.getElementById('appRoot').classList.remove('hidden');
+    document.getElementById('fabBtn').classList.remove('hidden');
+    startSync();
+    pushBackGuard();
+  } else {
+    uid = null;
+    if(unsubChars) unsubChars();
+    if(unsubItems) unsubItems();
+    document.getElementById('appRoot').classList.add('hidden');
+    document.getElementById('fabBtn').classList.add('hidden');
+    document.getElementById('signinScreen').classList.remove('hidden');
+    document.getElementById('signinLoadingTag').style.display = 'none';
+  }
+});
+
+/* ---------------- Realtime sync ---------------- */
+function startSync(){
+  const charsCol = collection(db, 'users', uid, 'characters');
+  const itemsCol = collection(db, 'users', uid, 'items');
+
+  unsubChars = onSnapshot(query(charsCol), (snap)=>{
+    if(!dragCtx){
+      state.characters = snap.docs.map(d=>({ id:d.id, ...d.data() }))
+        .sort((a,b)=>{
+          const ao=a.order, bo=b.order;
+          if(ao!=null && bo!=null) return ao-bo;
+          if(ao!=null) return -1;
+          if(bo!=null) return 1;
+          return (a.createdAt?.seconds||0)-(b.createdAt?.seconds||0);
+        });
+    }
+    render();
+  }, (err)=> showToast('キャラの同期でエラー: ' + err.message));
+
+  unsubItems = onSnapshot(query(itemsCol), (snap)=>{
+    state.items = snap.docs.map(d=>({ id:d.id, ...d.data() }))
+      .sort((a,b)=> (a.createdAt?.seconds||0) - (b.createdAt?.seconds||0));
+    render();
+  }, (err)=> showToast('グッズの同期でエラー: ' + err.message));
+}
+
+/* ---------------- Rendering ---------------- */
+function render(){
+  renderStats();
+  if(view.screen === 'home') renderHome();
+  else renderDetail();
+}
+
+function renderStats(){
+  const items = view.screen==='home' ? state.items : state.items.filter(i=>i.characterId===view.characterId);
+  const totalQty = items.reduce((s,i)=>s+Number(i.qty||0),0);
+  const totalYen = items.reduce((s,i)=>s+Number(i.price||0)*Number(i.qty||0),0);
+  const kinds = view.screen==='home' ? state.characters.length : new Set(items.map(i=>i.category||'未分類')).size;
+  document.getElementById('statsRow').innerHTML = `
+    <div class="stat pink"><div class="label">総アイテム数</div><div class="value">${totalQty}</div></div>
+    <div class="stat gold"><div class="label">合計金額</div><div class="value">${fmtYen(totalYen)}</div></div>
+    <div class="stat"><div class="label">${view.screen==='home'?'キャラ数':'カテゴリ数'}</div><div class="value">${kinds}</div></div>
+  `;
+  const titlebar = document.getElementById('titlebar');
+  if(view.screen==='home'){
+    titlebar.querySelector('h1').innerHTML = `<span class="pin"></span>推し活グッズ帳`;
+    const back = titlebar.querySelector('.backbtn');
+    if(back) back.remove();
+  } else {
+    const ch = state.characters.find(c=>c.id===view.characterId);
+    let back = titlebar.querySelector('.backbtn');
+    if(!back){
+      back = document.createElement('button');
+      back.className = 'backbtn';
+      back.textContent = '← 戻る';
+      back.onclick = ()=>{
+        if(history.state && history.state.oshikatsuGuard){ programmaticBack = true; history.back(); }
+        view.screen='home'; view.characterId=null; render();
+      };
+      titlebar.insertBefore(back, titlebar.firstChild);
+    }
+    titlebar.querySelector('h1').innerHTML = ch ? ch.name : '';
+    titlebar.querySelector('h1').style.fontSize = '18px';
+  }
+}
+
+function renderHome(){
+  const main = document.getElementById('mainArea');
+  if(state.characters.length===0){
+    main.innerHTML = `<div class="empty"><div class="display">まだキャラがいないよ</div><div>右下の＋から推しキャラを登録してね</div></div>`;
+    return;
+  }
+  let html = '<div style="font-size:11px; color:var(--ink-soft); text-align:center; margin-bottom:6px;">長押しでドラッグすると並び替えできるよ</div><div class="badge-grid">';
+  state.characters.forEach(ch=>{
+    const cnt = state.items.filter(i=>i.characterId===ch.id).reduce((s,i)=>s+Number(i.qty||0),0);
+    html += `
+      <button class="badge" data-open="${ch.id}">
+        <div class="badge-pin" style="--ring:${ch.color}">
+          ${ch.image ? `<img src="${ch.image}">` : (ch.name? ch.name[0] : '★')}
+        </div>
+        <div class="badge-name">${ch.name}</div>
+        <div class="badge-count">${cnt}点</div>
+      </button>`;
+  });
+  html += `
+      <button class="badge badge-add" id="addCharBtn">
+        <div class="badge-pin">＋</div>
+        <div class="badge-name">キャラを追加</div>
+        <div class="badge-count">&nbsp;</div>
+      </button>
+    </div>`;
+  main.innerHTML = html;
+  main.querySelectorAll('[data-open]').forEach(b=>{
+    b.onclick = ()=>{
+      if(justDragged){ justDragged=false; return; }
+      view.screen='detail'; view.characterId = b.dataset.open; filter={q:'',category:'ALL',series:'ALL'}; render(); pushBackGuard();
+    };
+  });
+  document.getElementById('addCharBtn').onclick = ()=>openCharModal(null);
+  attachReorderHandlers();
+}
+
+/* ---------------- Long-press drag reorder (characters) ---------------- */
+function attachReorderHandlers(){
+  document.querySelectorAll('#mainArea .badge[data-open]').forEach(badge=>{
+    badge.onpointerdown = (e)=> onBadgePointerDown(e, badge);
+    badge.oncontextmenu = (e)=> e.preventDefault();
+  });
+}
+function onBadgePointerDown(e, badge){
+  const id = badge.dataset.open;
+  const startX = e.clientX, startY = e.clientY;
+  let cancelled = false;
+  const timer = setTimeout(()=>{
+    if(cancelled) return;
+    cleanup();
+    beginDrag(id, badge);
+  }, 420);
+  function onMove(ev){
+    if(Math.abs(ev.clientX-startX)>8 || Math.abs(ev.clientY-startY)>8){
+      cancelled = true; clearTimeout(timer); cleanup();
+    }
+  }
+  function onUp(){ cancelled = true; clearTimeout(timer); cleanup(); }
+  function cleanup(){
+    document.removeEventListener('pointermove', onMove);
+    document.removeEventListener('pointerup', onUp);
+  }
+  document.addEventListener('pointermove', onMove);
+  document.addEventListener('pointerup', onUp);
+}
+function beginDrag(id, badge){
+  if(navigator.vibrate){ try{ navigator.vibrate(15); }catch(e){} }
+  const rect = badge.getBoundingClientRect();
+  const ghost = document.createElement('div');
+  ghost.className = 'drag-ghost';
+  ghost.innerHTML = badge.innerHTML;
+  ghost.style.left = (rect.left+rect.width/2)+'px';
+  ghost.style.top = (rect.top+rect.height/2)+'px';
+  document.body.appendChild(ghost);
+  badge.classList.add('dragging');
+  dragCtx = { id };
+
+  function onMove(ev){
+    ghost.style.left = ev.clientX+'px';
+    ghost.style.top = ev.clientY+'px';
+    const el = document.elementFromPoint(ev.clientX, ev.clientY);
+    const overBadge = el && el.closest ? el.closest('.badge[data-open]') : null;
+    if(overBadge && overBadge.dataset.open !== dragCtx.id){
+      const fromIdx = state.characters.findIndex(c=>c.id===dragCtx.id);
+      const toIdx = state.characters.findIndex(c=>c.id===overBadge.dataset.open);
+      if(fromIdx>-1 && toIdx>-1){
+        const [movedChar] = state.characters.splice(fromIdx,1);
+        state.characters.splice(toIdx,0,movedChar);
+        renderHome();
+        const newBadge = document.querySelector(`.badge[data-open="${dragCtx.id}"]`);
+        if(newBadge) newBadge.classList.add('dragging');
+      }
+    }
+  }
+  function onUp(){
+    document.removeEventListener('pointermove', onMove);
+    document.removeEventListener('pointerup', onUp);
+    ghost.remove();
+    const finalBadge = document.querySelector(`.badge[data-open="${dragCtx.id}"]`);
+    if(finalBadge) finalBadge.classList.remove('dragging');
+    justDragged = true;
+    setTimeout(()=>{ justDragged = false; }, 80);
+    persistCharacterOrder();
+    dragCtx = null;
+  }
+  document.addEventListener('pointermove', onMove);
+  document.addEventListener('pointerup', onUp);
+}
+async function persistCharacterOrder(){
+  try{
+    await Promise.all(state.characters.map((c, idx)=> updateDoc(doc(db,'users',uid,'characters',c.id), { order: idx })));
+    showToast('並び順を保存したよ');
+  }catch(e){ showToast('並び順の保存に失敗: ' + e.message); }
+}
+
+function countByKeyDesc(items, key){
+  const counts = {};
+  items.forEach(i=>{ const v = i[key]; if(v) counts[v] = (counts[v]||0) + 1; });
+  return Object.keys(counts).sort((a,b)=> counts[b]-counts[a] || a.localeCompare(b,'ja'));
+}
+
+function getFilteredSortedItems(chItems){
+  let list = chItems.filter(i=>{
+    const q = filter.q.toLowerCase();
+    const matchQ = !filter.q || i.name.toLowerCase().includes(q) || (i.series||'').toLowerCase().includes(q);
+    return matchQ;
+  });
+  list = list.slice().sort((a,b)=>
+    (b.qty - a.qty) ||
+    a.name.localeCompare(b.name,'ja') ||
+    (a.category||'').localeCompare(b.category||'','ja')
+  );
+  return list;
+}
+
+function displayItemName(i){
+  const name = String(i.name||'').trim();
+  const series = String(i.series||'').trim();
+  if(!series || /^【[^】]+】/.test(name)) return name;
+  return `【${series}】${name}`;
+}
+function normalizeSeriesIntoName(item){
+  let name = String(item.name||'').trim();
+  const series = String(item.series||'').trim();
+  if(series && !/^【[^】]+】/.test(name)) name = `【${series}】${name}`;
+  return { ...item, name, series: '' };
+}
+function broadCategory(category, name='', series=''){
+  const c = String(category||'').trim();
+  const text = (c+' '+String(name||'')+' '+String(series||'')).toLowerCase();
+  if(/ボイス|voice|音声/.test(text)) return 'ボイス';
+  if(/缶バッジ|缶ミラー|ピンバッジ/.test(c)) return '缶バッジ';
+  if(/ポストカード|フォト風カード|メタルカード|トレーディングカード|トランプ|ブロマイド|色紙|クリアポスター|ステッカー|クリアファイル/.test(c)) return 'カード・紙類';
+  if(/アクリル/.test(c)) return 'アクリル';
+  return '雑貨';
+}
+function renderItemGridHtml(list){
+  if(list.length===0){
+    return `<div class="empty"><div class="display">グッズがまだないよ</div><div>カテゴリの＋から追加してね</div></div>`;
+  }
+  const grouped = new Map();
+  list.forEach(i=>{ const cat=i.category||'未分類'; if(!grouped.has(cat)) grouped.set(cat,[]); grouped.get(cat).push(i); });
+  const orderedCats = [...grouped.keys()].sort((a,b)=>{
+    const ia=countByKeyDesc(list,'category');
+    return (ia.indexOf(a)-ia.indexOf(b)) || a.localeCompare(b,'ja');
+  });
+  let html='';
+  orderedCats.forEach(cat=>{
+    const rows=grouped.get(cat);
+    const qty=rows.reduce((n,i)=>n+Number(i.qty||0),0);
+    const total=rows.reduce((n,i)=>n+Number(i.price||0)*Number(i.qty||0),0);
+    html += `<section class="category-section" style="margin:18px 0 24px;">
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:12px;">
+        <div style="min-width:0;flex:1;font-size:15px;font-weight:800;color:var(--ink);">${cat} <span style="font-size:12px;color:var(--ink-soft);font-weight:600;">${rows.length}種・${qty}個・${fmtYen(total)}</span></div>
+        <button type="button" class="menubtn category-add-btn" data-add-category="${cat.replace(/&/g,'&amp;').replace(/"/g,'&quot;')}" aria-label="${cat}にグッズを追加" style="width:34px;height:34px;font-size:22px;flex:none;">＋</button>
+      </div>
+      <div class="item-grid" style="grid-template-columns:repeat(${gridCols},1fr);">`;
+    rows.forEach(i=>{
+      const imgs=getItemImages(i);
+      html += `<div class="item-card" data-edit="${i.id}">
+        <div class="item-img">${imgs.length ? `<img src="${imgs[0]}">${imgs.length>1?`<span class="item-img-badge">+${imgs.length-1}</span>`:''}` : '🎀'}</div>
+        <div class="item-body">
+          <div class="item-name">${displayItemName(i)}</div>
+          <div class="item-price-row"><span class="item-price">${fmtYen(i.price)}</span><span class="item-qty">×${i.qty}</span></div>
+          <div class="item-sub">小計 ${fmtYen(Number(i.price||0)*Number(i.qty||0))}${i.releaseYear ? ` ・ ${i.releaseYear}年` : ''}</div>
+        </div>
+      </div>`;
+    });
+    html += '</div></section>';
+  });
+  return html;
+}
+function updateItemGrid(){
+  const chItems = state.items.filter(i=>i.characterId===view.characterId);
+  const list = getFilteredSortedItems(chItems);
+  const gridArea = document.getElementById('itemGridArea');
+  if(!gridArea) return;
+  gridArea.innerHTML = renderItemGridHtml(list);
+  gridArea.querySelectorAll('[data-edit]').forEach(card=>{ card.onclick = ()=>openItemModal(card.dataset.edit); });
+  gridArea.querySelectorAll('[data-add-category]').forEach(btn=>{ btn.onclick = (e)=>{ e.stopPropagation(); openItemModal(null, btn.dataset.addCategory==='未分類'?'':btn.dataset.addCategory); }; });
+}
+
+function renderDetail(){
+  const main = document.getElementById('mainArea');
+  const ch = state.characters.find(c=>c.id===view.characterId);
+  const chItems = state.items.filter(i=>i.characterId===view.characterId);
+  const categories = ['ALL', ...countByKeyDesc(chItems, 'category')];
+  const seriesList = ['ALL', ...countByKeyDesc(chItems, 'series')];
+  const list = getFilteredSortedItems(chItems);
+
+  let html = `
+    <div class="toolbar">
+      <button class="scanbtn" id="scanBtn" ${GEMINI_API_KEY ? '' : 'disabled'}>📷 レシート・注文控えから追加</button>
+      <div class="searchrow">
+        <input class="searchbox" id="searchInput" placeholder="商品名・シリーズ名で検索" value="${filter.q}">
+      </div>
+      <div class="filterrow" style="display:flex; gap:8px; min-width:0; justify-content:flex-end;">
+        <div style="position:relative; flex:none;">
+          <button class="menubtn" id="gridColsBtn" style="width:38px; height:38px; font-size:15px;" aria-label="表示列数を変更">⊞</button>
+          <div class="gridcols-popup hidden" id="gridColsPopup">
+            <button type="button" data-action="inc" ${gridCols>=4?'disabled':''}>＋ 列を増やす</button>
+            <button type="button" data-action="dec" ${gridCols<=2?'disabled':''}>− 列を減らす</button>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div id="itemGridArea">${renderItemGridHtml(list)}</div>
+  `;
+
+  main.innerHTML = html;
+  document.getElementById('searchInput').oninput = (e)=>{ filter.q = e.target.value; updateItemGrid(); };
+  document.getElementById('gridColsBtn').onclick = (e)=>{
+    e.stopPropagation();
+    document.getElementById('gridColsPopup').classList.toggle('hidden');
+  };
+  document.getElementById('gridColsPopup').querySelectorAll('button').forEach(b=>{
+    b.onclick = ()=>{
+      if(b.dataset.action==='inc') gridCols = Math.min(4, gridCols+1);
+      else gridCols = Math.max(2, gridCols-1);
+      localStorage.setItem('oshikatsu_gridCols', gridCols);
+      document.getElementById('gridColsPopup').classList.add('hidden');
+      renderDetail();
+    };
+  });
+  document.getElementById('itemGridArea').querySelectorAll('[data-edit]').forEach(card=>{ card.onclick = ()=>openItemModal(card.dataset.edit); });
+  document.getElementById('scanBtn').onclick = ()=>{
+    if(!GEMINI_API_KEY){ showToast('Gemini APIキーが設定されてないよ'); return; }
+    document.getElementById('scanFileInput').click();
+  };
+}
+
+/* ---------------- Character modal ---------------- */
+let charImgTemp = null;
+const HEX_RE = /^#?[0-9A-Fa-f]{6}$/;
+function openCharModal(id){
+  const ch = id ? state.characters.find(c=>c.id===id) : null;
+  document.getElementById('charModalTitle').textContent = ch ? 'キャラを編集' : 'キャラを追加';
+  document.getElementById('charNameInput').value = ch ? ch.name : '';
+  document.getElementById('charShopUrlInput').value = ch ? (ch.shopUrl||'') : '';
+  charImgTemp = ch ? ch.image : null;
+  updateCharImgPick();
+  const row = document.getElementById('colorRow');
+  row.innerHTML = COLORS.map(c=>`<button type="button" class="colordot" data-color="${c}" style="background:${c}"></button>`).join('');
+  let selColor = ch ? ch.color : COLORS[state.characters.length % COLORS.length];
+  const hexInput = document.getElementById('charHexInput');
+  const hexPreview = document.getElementById('hexPreview');
+  hexInput.value = selColor; hexPreview.style.background = selColor;
+  markColorSel(selColor);
+  row.querySelectorAll('.colordot').forEach(d=>{
+    d.onclick = ()=>{ selColor = d.dataset.color; hexInput.value = selColor; hexPreview.style.background = selColor; markColorSel(selColor); };
+  });
+  hexInput.oninput = (e)=>{
+    let v = e.target.value.trim();
+    if(HEX_RE.test(v)){
+      if(!v.startsWith('#')) v = '#'+v;
+      selColor = v.toUpperCase();
+      hexPreview.style.background = selColor;
+      markColorSel(selColor);
+    } else { hexPreview.style.background = 'transparent'; }
+  };
+  document.getElementById('charDeleteRow').classList.toggle('hidden', !ch);
+
+  document.getElementById('charSaveBtn').onclick = async ()=>{
+    const name = document.getElementById('charNameInput').value.trim();
+    if(!name){ showToast('キャラ名を入力してね'); return; }
+    const shopUrl = document.getElementById('charShopUrlInput').value.trim();
+    document.getElementById('charSaveBtn').textContent = '保存中…';
+    try{
+      if(ch){
+        await updateDoc(doc(db,'users',uid,'characters',ch.id), { name, color:selColor, image: charImgTemp||null, shopUrl });
+      } else {
+        await addDoc(collection(db,'users',uid,'characters'), { name, color:selColor, image: charImgTemp||null, shopUrl, order: state.characters.length, createdAt: serverTimestamp() });
+      }
+      closeModal('charOverlay'); view.screen='home'; showToast('保存したよ');
+    }catch(e){ showToast('保存に失敗: ' + e.message); }
+    document.getElementById('charSaveBtn').textContent = '保存する';
+  };
+  document.getElementById('charDeleteBtn').onclick = async ()=>{
+    if(!confirm(`「${ch.name}」を削除する？関連するグッズも全て削除されます。`)) return;
+    try{
+      const related = state.items.filter(i=>i.characterId===ch.id);
+      for(const it of related){
+        await deleteDoc(doc(db,'users',uid,'items',it.id));
+      }
+      await deleteDoc(doc(db,'users',uid,'characters',ch.id));
+      closeModal('charOverlay'); view.screen='home'; showToast('削除したよ');
+    }catch(e){ showToast('削除に失敗: ' + e.message); }
+  };
+  function markColorSel(c){ row.querySelectorAll('.colordot').forEach(d=>d.classList.toggle('sel', d.dataset.color.toUpperCase()===c.toUpperCase())); }
+  openModal('charOverlay');
+}
+function updateCharImgPick(){
+  document.getElementById('charImgPick').innerHTML = charImgTemp ? `<img src="${charImgTemp}">` : `<span>タップして画像を選ぶ</span>`;
+}
+document.getElementById('charImgPick').onclick = ()=>document.getElementById('charImgInput').click();
+document.getElementById('charImgInput').onchange = async (e)=>{
+  const f = e.target.files[0]; if(!f) return;
+  e.target.value = '';
+  try{
+    charImgTemp = await compressImageFile(f, 480, 0.7);
+    updateCharImgPick();
+  }catch(err){ showToast(err.message); }
+};
+document.getElementById('charCancelBtn').onclick = ()=>closeModal('charOverlay');
+
+/* ---------------- Item modal ---------------- */
+let itemImgTemp = [];
+function getItemImages(it){
+  if(it.images && it.images.length) return it.images;
+  if(it.image) return [it.image];
+  return [];
+}
+function openItemModal(id, presetCategory=''){
+  const it = id ? state.items.find(i=>i.id===id) : null;
+  const ch = state.characters.find(c=>c.id===view.characterId);
+  document.getElementById('itemModalTitle').textContent = it ? 'グッズを編集' : 'グッズを追加';
+  document.getElementById('itemNameInput').value = it ? displayItemName(it) : '';
+  document.getElementById('itemSeriesInput').value = it ? (it.series||'') : '';
+  document.getElementById('itemCatInput').value = it ? (it.category||'') : presetCategory;
+  document.getElementById('itemPriceInput').value = it ? it.price : '';
+  document.getElementById('itemQtyInput').value = it ? it.qty : 1;
+  document.getElementById('itemYearInput').value = it && it.releaseYear ? it.releaseYear : '';
+  document.getElementById('itemMemoInput').value = it ? (it.memo||'') : '';
+  itemImgTemp = it ? getItemImages(it).slice() : [];
+  updateItemImgPick();
+  document.getElementById('nameSuggestRow').classList.add('hidden');
+  document.getElementById('nameSuggestRow').innerHTML = '';
+
+  const seriesInput = document.getElementById('itemSeriesInput');
+  const yearInput = document.getElementById('itemYearInput');
+  seriesInput.onblur = ()=>{
+    if(!ch || ch.name!=='イブラヒム') return;
+    if(yearInput.value) return; // すでに入力済みなら上書きしない
+    const guessed = guessReleaseYear(seriesInput.value.trim());
+    if(guessed){
+      const row = document.getElementById('nameSuggestRow');
+      row.classList.remove('hidden');
+      const chip = document.createElement('button');
+      chip.type = 'button'; chip.className = 'suggest-chip';
+      chip.textContent = `発売年: ${guessed}年 ✓`;
+      chip.onclick = ()=>{ yearInput.value = guessed; chip.remove(); };
+      row.appendChild(chip);
+    }
+  };
+
+  const usedCats = Array.from(new Set(state.items.map(i=>i.category).filter(Boolean)));
+  const allCats = Array.from(new Set([...CATEGORY_LIST, ...usedCats]));
+  document.getElementById('catList').innerHTML = allCats.map(c=>`<option value="${c}">`).join('');
+  const usedSeries = Array.from(new Set(state.items.map(i=>i.series).filter(Boolean)));
+  document.getElementById('seriesList').innerHTML = usedSeries.map(s=>`<option value="${s}">`).join('');
+  document.getElementById('itemDeleteBtn').classList.toggle('hidden', !it);
+
+  const searchBtn = document.getElementById('searchSiteBtn');
+  if(ch && ch.shopUrl){
+    searchBtn.classList.remove('hidden');
+    searchBtn.onclick = ()=>{
+      const q = document.getElementById('itemNameInput').value.trim();
+      if(!q){ showToast('商品名を入力してから調べてね'); return; }
+      try{
+        const domain = new URL(ch.shopUrl).hostname;
+        const url = `https://www.google.com/search?q=${encodeURIComponent('site:'+domain+' '+q)}`;
+        window.open(url, '_blank');
+      }catch(e){ showToast('公式通販URLの形式を確認してね'); }
+    };
+  } else {
+    searchBtn.classList.add('hidden');
+  }
+
+  const nameInput = document.getElementById('itemNameInput');
+  nameInput.onpaste = ()=>{
+    setTimeout(()=>{ handleNameAutoExtract(nameInput.value); }, 0);
+  };
+
+  document.getElementById('itemSaveBtn').onclick = async ()=>{
+    let name = document.getElementById('itemNameInput').value.trim();
+    if(!name){ showToast('商品名を入力してね'); return; }
+    let series = document.getElementById('itemSeriesInput').value.trim();
+    const seriesMatch = name.match(/^【([^】]+)】\s*/);
+    if(seriesMatch){ series = ''; }
+    else if(series){ name = `【${series}】${name}`; }
+    series = '';
+    const category = document.getElementById('itemCatInput').value.trim();
+    const price = Number(document.getElementById('itemPriceInput').value)||0;
+    const qty = Number(document.getElementById('itemQtyInput').value)||1;
+    const releaseYear = Number(document.getElementById('itemYearInput').value)||null;
+    const memo = document.getElementById('itemMemoInput').value.trim();
+    if(totalImageBytes(itemImgTemp) > MAX_IMAGE_BYTES){
+      showToast('画像の合計サイズが大きすぎるよ。枚数を減らしてね');
+      return;
+    }
+    document.getElementById('itemSaveBtn').textContent = '保存中…';
+    try{
+      const images = itemImgTemp;
+      if(it){
+        await updateDoc(doc(db,'users',uid,'items',it.id), { name, series, category, price, qty, releaseYear, memo, images, image: images[0]||null });
+      } else {
+        await addDoc(collection(db,'users',uid,'items'), { characterId: view.characterId, name, series, category, price, qty, releaseYear, memo, images, image: images[0]||null, createdAt: serverTimestamp() });
+      }
+      closeModal('itemOverlay'); showToast('保存したよ');
+    }catch(e){ showToast('保存に失敗: ' + e.message); }
+    document.getElementById('itemSaveBtn').textContent = '保存する';
+  };
+  document.getElementById('itemDeleteBtn').onclick = async ()=>{
+    if(!confirm(`「${it.name}」を削除する？`)) return;
+    try{
+      await deleteDoc(doc(db,'users',uid,'items',it.id));
+      closeModal('itemOverlay'); showToast('削除したよ');
+    }catch(e){ showToast('削除に失敗: ' + e.message); }
+  };
+  openModal('itemOverlay');
+}
+
+/* ---------------- Name auto-extract (series / category / price) ---------------- */
+function parseItemNameInput(raw){
+  let name = raw;
+  let seriesGuess = null, priceGuess = null, categoryGuess = null;
+
+  const seriesMatch = name.match(/【([^】]+)】/);
+  if(seriesMatch){ seriesGuess = seriesMatch[1]; name = name.replace(seriesMatch[0], '').trim(); }
+
+  const priceMatch = name.match(/¥\s?([\d,]+)|([\d,]+)\s?円/);
+  if(priceMatch){
+    const numRaw = (priceMatch[1]||priceMatch[2]).replace(/,/g,'');
+    priceGuess = Number(numRaw);
+    name = name.replace(priceMatch[0], '').replace(/税込/g,'').trim();
+  }
+  name = name.replace(/\s+/g,' ').trim();
+  const matches = CATEGORY_LIST.filter(c => name.includes(c));
+  categoryGuess = matches.length ? matches.sort((a,b)=>b.length-a.length)[0] : null;
+
+  return { name, seriesGuess, priceGuess, categoryGuess };
+}
+function handleNameAutoExtract(raw){
+  const { name, seriesGuess, priceGuess, categoryGuess } = parseItemNameInput(raw);
+  document.getElementById('itemNameInput').value = name;
+  if(priceGuess !== null){
+    document.getElementById('itemPriceInput').value = priceGuess;
+  }
+  const row = document.getElementById('nameSuggestRow');
+  row.innerHTML = '';
+  let hasSuggestion = false;
+  if(seriesGuess){
+    hasSuggestion = true;
+    const chip = document.createElement('button');
+    chip.type = 'button'; chip.className = 'suggest-chip';
+    chip.textContent = `シリーズ: ${seriesGuess} ✓`;
+    chip.onclick = ()=>{ document.getElementById('itemSeriesInput').value = seriesGuess; chip.remove(); };
+    row.appendChild(chip);
+  }
+  if(categoryGuess){
+    hasSuggestion = true;
+    const chip = document.createElement('button');
+    chip.type = 'button'; chip.className = 'suggest-chip';
+    chip.textContent = `カテゴリ: ${categoryGuess} ✓`;
+    chip.onclick = ()=>{ document.getElementById('itemCatInput').value = categoryGuess; chip.remove(); };
+    row.appendChild(chip);
+  }
+  row.classList.toggle('hidden', !hasSuggestion);
+  if(priceGuess !== null) showToast(`価格 ¥${priceGuess.toLocaleString('ja-JP')} を自動入力したよ`);
+}
+function updateItemImgPick(){
+  const row = document.getElementById('itemImgRow');
+  let html = itemImgTemp.map((src, idx)=>`
+    <div class="multi-img-thumb">
+      <img src="${src}">
+      <button type="button" class="rm-btn" data-rm="${idx}">×</button>
+    </div>`).join('');
+  html += `<button type="button" class="multi-img-add" id="itemImgAddBtn">＋</button>`;
+  row.innerHTML = html;
+  row.querySelectorAll('[data-rm]').forEach(btn=>{
+    btn.onclick = ()=>{ itemImgTemp.splice(Number(btn.dataset.rm),1); updateItemImgPick(); };
+  });
+  document.getElementById('itemImgAddBtn').onclick = ()=>document.getElementById('itemImgInput').click();
+}
+document.getElementById('itemImgInput').onchange = async (e)=>{
+  const files = Array.from(e.target.files||[]);
+  e.target.value = '';
+  if(files.length===0) return;
+  showToast('画像を処理中…');
+  for(const f of files){
+    try{
+      const compressed = await compressImageFile(f, 640, 0.65);
+      itemImgTemp.push(compressed);
+    }catch(err){ showToast(err.message); }
+  }
+  updateItemImgPick();
+};
+document.getElementById('itemCancelBtn').onclick = ()=>closeModal('itemOverlay');
+document.getElementById('modalQtyMinus').onclick = ()=>{
+  const inp = document.getElementById('itemQtyInput');
+  inp.value = Math.max(0, (Number(inp.value)||0) - 1);
+};
+document.getElementById('modalQtyPlus').onclick = ()=>{
+  const inp = document.getElementById('itemQtyInput');
+  inp.value = (Number(inp.value)||0) + 1;
+};
+
+/* ---------------- FAB ---------------- */
+document.getElementById('fabBtn').onclick = ()=>{
+  if(view.screen==='home') openCharModal(null); else openItemModal(null);
+};
+
+/* ---------------- Modal helpers ---------------- */
+function openModal(id){ document.getElementById(id).classList.add('show'); pushBackGuard(); }
+function closeModal(id){
+  document.getElementById(id).classList.remove('show');
+  if(history.state && history.state.oshikatsuGuard){
+    programmaticBack = true;
+    history.back();
+  }
+}
+
+/* ---------------- Androidの戻るボタン対策 ----------------
+   戻るボタンでいきなりアプリが閉じないよう、モーダルが開いてる時・詳細画面にいる時は
+   「1つ前の状態に戻る」動きにする。ホーム画面まで戻ったら、それ以上は通常通り閉じられる。 */
+let programmaticBack = false;
+function pushBackGuard(){ history.pushState({ oshikatsuGuard:true }, ''); }
+function closeTopmostModal(){
+  const overlays = Array.from(document.querySelectorAll('.overlay.show'));
+  if(overlays.length===0) return false;
+  overlays[overlays.length-1].classList.remove('show');
+  return true;
+}
+window.addEventListener('popstate', ()=>{
+  if(programmaticBack){ programmaticBack = false; return; }
+  if(closeTopmostModal()){ pushBackGuard(); return; }
+  if(view.screen==='detail'){
+    view.screen='home'; view.characterId=null; render();
+    pushBackGuard();
+    return;
+  }
+  // ホーム画面まで戻ってて開いてるモーダルもない状態 → ここでは何もしない（次に戻るを押すとアプリが閉じる）
+});
+
+/* ---------------- Receipt scan (Gemini API, client-side, free tier) ---------------- */
+function fileToBase64Raw(file){
+  return new Promise((resolve, reject)=>{
+    const reader = new FileReader();
+    reader.onload = ()=>{
+      const result = reader.result;
+      const base64 = result.split(',')[1];
+      resolve({ base64, mimeType: file.type || 'image/jpeg' });
+    };
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
+}
+// 503(モデル過負荷)・429(レート制限)エラー時に指数バックオフで自動リトライする
+async function fetchGeminiWithRetry(url, options, maxRetries = 3){
+  let lastRes;
+  for(let attempt = 0; attempt <= maxRetries; attempt++){
+    lastRes = await fetch(url, options);
+    if(lastRes.status !== 503 && lastRes.status !== 429) return lastRes; // 503/429以外は即返す（成功・他エラーとも）
+    if(attempt === maxRetries) return lastRes; // 最後まで失敗したら諦めて返す
+    const waitMs = 1000 * Math.pow(2, attempt); // 1s → 2s → 4s
+    await new Promise(r => setTimeout(r, waitMs));
+  }
+  return lastRes;
+}
+
+async function callGeminiReceiptExtract(base64, mimeType){
+  const prompt = `この画像は推し活グッズの注文控え・購入履歴・領収書・コレクション管理アプリの一覧画面のいずれかです。写っている商品をすべて抽出してください。
+出力はJSON配列のみで、説明文やマークダウンのコードブロックは一切つけないでください。
+各要素は次の形式にしてください:
+{"name": "商品名をそのまま正確に書き写す。先頭に【〇〇】のような表記があれば、それも省略せずそのまま含めること", "qty": 個数（数値、不明なら1）, "price": 単価（数値・円、不明なら0）}
+商品が1つも読み取れない場合は空配列 [] を返してください。`;
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash:generateContent`;
+  const body = {
+    contents: [{ parts: [ { text: prompt }, { inline_data: { mime_type: mimeType, data: base64 } } ] }]
+  };
+  const res = await fetchGeminiWithRetry(url, { method:'POST', headers:{'Content-Type':'application/json', 'X-goog-api-key': GEMINI_API_KEY}, body: JSON.stringify(body) });
+  if(!res.ok){
+    const reasons = { 429: 'レート制限に達した', 503: 'サーバー混雑中', 404: 'モデルが見つからない', 400: 'リクエスト不正' };
+    const reason = reasons[res.status] || '不明なエラー';
+    throw new Error(`Gemini APIエラー ${res.status}（${reason}）`);
+  }
+  const data = await res.json();
+  let text = data?.candidates?.[0]?.content?.parts?.[0]?.text || '[]';
+  text = text.trim().replace(/^```json/i,'').replace(/^```/,'').replace(/```$/,'').trim();
+  let items;
+  try{ items = JSON.parse(text); }catch(e){ throw new Error('読み取り結果の解析に失敗したよ'); }
+  if(!Array.isArray(items)) throw new Error('読み取り結果の形式が想定外だったよ');
+  return items.map(it=>{
+    const rawName = String(it.name||'').trim();
+    if(!rawName) return null;
+    // AIが読み取った商品名から、既存の【】/キーワード抽出ロジックでシリーズ・カテゴリを機械的に分離する
+    const parsed = parseItemNameInput(rawName);
+    return {
+      name: parsed.name,
+      series: parsed.seriesGuess || '',
+      category: parsed.categoryGuess || '',
+      qty: Number(it.qty)||1,
+      price: Number(it.price)||0
+    };
+  }).filter(Boolean);
+}
+
+document.getElementById('scanFileInput').onchange = async (e)=>{
+  const f = e.target.files[0]; if(!f) return;
+  e.target.value = '';
+  document.getElementById('scanTitle').textContent = '読み取り中…';
+  document.getElementById('scanBody').innerHTML = `<div style="display:flex; justify-content:center; padding:30px;"><div class="spinner"></div></div>`;
+  openModal('scanOverlay');
+  try{
+    const { base64, mimeType } = await fileToBase64Raw(f);
+    const items = await callGeminiReceiptExtract(base64, mimeType);
+    if(items.length===0){
+      document.getElementById('scanTitle').textContent = '読み取れなかったよ';
+      document.getElementById('scanBody').innerHTML = `<p style="font-size:13px; color:var(--ink-soft);">商品を見つけられなかった。写真を変えてもう一度試してみて。</p>`;
+      return;
+    }
+    runScanConfirmFlow(items);
+  }catch(err){
+    document.getElementById('scanTitle').textContent = '読み取りに失敗したよ';
+    document.getElementById('scanBody').innerHTML = `<p style="font-size:13px; color:var(--ink-soft);">${err.message}</p>`;
+  }
+};
+
+function runScanConfirmFlow(items){
+  const usedCats = Array.from(new Set(state.items.map(i=>i.category).filter(Boolean)));
+  const allCats = Array.from(new Set([...CATEGORY_LIST, ...usedCats]));
+  document.getElementById('catList').innerHTML = allCats.map(c=>`<option value="${c}">`).join('');
+  let index = 0;
+  let addedCount = 0;
+  async function addOne(data){
+    await addDoc(collection(db,'users',uid,'items'), {
+      characterId: view.characterId, name: data.name, series: data.series||'', category: data.category||'',
+      price: data.price||0, qty: data.qty||1, memo:'',
+      images:[], image:null, createdAt: serverTimestamp()
+    });
+    addedCount++;
+  }
+  function showCurrent(){
+    if(index >= items.length){
+      document.getElementById('scanTitle').textContent = '完了！';
+      document.getElementById('scanBody').innerHTML = `<p style="font-size:14px;">${addedCount}件のグッズを追加したよ🎀</p>`;
+      return;
+    }
+    const cur = items[index];
+    const remaining = items.length - index;
+    document.getElementById('scanTitle').textContent = `確認 (${index+1}/${items.length})`;
+    document.getElementById('scanBody').innerHTML = `
+      <div class="field">
+        <label>商品名</label>
+        <input type="text" id="scanName" value="${cur.name.replace(/"/g,'&quot;')}">
+      </div>
+      <div class="field scan-field-row">
+        <div style="flex:1;">
+          <label>シリーズ</label>
+          <input type="text" id="scanSeries" value="${(cur.series||'').replace(/"/g,'&quot;')}">
+        </div>
+        <div style="flex:1;">
+          <label>カテゴリ</label>
+          <input type="text" id="scanCategory" list="catList" value="${(cur.category||'').replace(/"/g,'&quot;')}">
+        </div>
+      </div>
+      <div class="field scan-field-row">
+        <div style="flex:1;">
+          <label>価格（円）</label>
+          <input type="number" id="scanPrice" value="${cur.price}">
+        </div>
+        <div style="flex:1;">
+          <label>個数</label>
+          <input type="number" id="scanQty" value="${cur.qty}">
+        </div>
+      </div>
+      <div class="sheet-actions">
+        <button class="btn ghost" id="scanSkipBtn">スキップ</button>
+        <button class="btn primary" id="scanAddBtn">追加する</button>
+      </div>
+      ${remaining>1 ? `<div class="sheet-actions" style="margin-top:8px;">
+        <button class="btn ghost" id="scanBulkBtn">残り${remaining}件をこのまま全部追加</button>
+      </div>` : ''}
+    `;
+    document.getElementById('scanSkipBtn').onclick = ()=>{ index++; showCurrent(); };
+    document.getElementById('scanAddBtn').onclick = async ()=>{
+      const name = document.getElementById('scanName').value.trim();
+      if(!name){ showToast('商品名を入力してね'); return; }
+      const series = document.getElementById('scanSeries').value.trim();
+      const category = document.getElementById('scanCategory').value.trim();
+      const price = Number(document.getElementById('scanPrice').value)||0;
+      const qty = Number(document.getElementById('scanQty').value)||1;
+      try{ await addOne({ name, series, category, price, qty }); }
+      catch(e){ showToast('追加に失敗: ' + e.message); }
+      index++; showCurrent();
+    };
+    const bulkBtn = document.getElementById('scanBulkBtn');
+    if(bulkBtn){
+      bulkBtn.onclick = async ()=>{
+        if(!confirm(`残り${remaining}件を確認なしでそのまま追加する？`)) return;
+        bulkBtn.textContent = '追加中…';
+        for(let i=index; i<items.length; i++){
+          try{ await addOne(items[i]); }catch(e){}
+        }
+        index = items.length;
+        showCurrent();
+      };
+    }
+  }
+  showCurrent();
+}
+document.getElementById('scanCloseBtn').onclick = ()=>closeModal('scanOverlay');
+
+
+document.getElementById('backupOpenBtn').onclick = ()=>{ openModal('backupOverlay'); };
+
+/* ---------------- History (登録履歴・新しい順一覧) ---------------- */
+function renderHistory(){
+  const items = state.items.slice().sort((a,b)=>(b.createdAt?.seconds||0)-(a.createdAt?.seconds||0));
+  const body = document.getElementById('historyBody');
+  if(items.length===0){
+    body.innerHTML = `<p style="font-size:13px; color:var(--ink-soft); text-align:center; padding:20px 0;">まだグッズが登録されてないよ</p>`;
+    return;
+  }
+  body.innerHTML = items.map(i=>{
+    const ch = state.characters.find(c=>c.id===i.characterId);
+    const imgs = getItemImages(i);
+    const thumb = imgs.length ? `<img src="${imgs[0]}">` : '🎀';
+    const sec = i.createdAt?.seconds;
+    const dateStr = sec ? new Date(sec*1000).toLocaleDateString('ja-JP', {year:'numeric', month:'numeric', day:'numeric'}) : '';
+    return `
+      <div class="history-row" data-edit="${i.id}">
+        <div class="history-thumb">${thumb}</div>
+        <div class="history-info">
+          <div class="history-name">${i.name}</div>
+          <div class="history-sub">${fmtYen(i.price)} ・ ×${i.qty} ・ ${dateStr}</div>
+        </div>
+        ${ch ? `<span class="history-char">${ch.name}</span>` : ''}
+      </div>`;
+  }).join('');
+  body.querySelectorAll('[data-edit]').forEach(row=>{
+    row.onclick = ()=>{
+      const it = state.items.find(i=>i.id===row.dataset.edit);
+      if(!it) return;
+      closeModal('historyOverlay');
+      view.screen = 'detail'; view.characterId = it.characterId; filter = {q:'',category:'ALL',series:'ALL'};
+      render();
+      openItemModal(it.id);
+    };
+  });
+}
+document.getElementById('historyOpenBtn').onclick = ()=>{ closeModal('backupOverlay'); renderHistory(); openModal('historyOverlay'); };
+document.getElementById('historyCloseBtn').onclick = ()=>closeModal('historyOverlay');
+document.addEventListener('click', ()=>{
+  const p = document.getElementById('gridColsPopup');
+  if(p) p.classList.add('hidden');
+});
+
+document.getElementById('backupCloseBtn').onclick = ()=>closeModal('backupOverlay');
+
+/* ---------------- Manual JSON export (extra safety net) ---------------- */
+document.getElementById('exportBtn').onclick = ()=>{
+  const blob = new Blob([JSON.stringify(state, null, 2)], {type:'application/json'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  const d = new Date();
+  const stamp = `${d.getFullYear()}${String(d.getMonth()+1).padStart(2,'0')}${String(d.getDate()).padStart(2,'0')}`;
+  a.href = url; a.download = `oshikatsu_backup_${stamp}.json`;
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+  showToast('書き出したよ');
+};
+
+
+/* ---------------- JSON import + series migration ---------------- */
+document.getElementById('importBtn').onclick = ()=>{
+  document.getElementById('importFileInput').click();
+};
+document.getElementById('importFileInput').onchange = async (e)=>{
+  const file = e.target.files && e.target.files[0];
+  e.target.value = '';
+  if(!file) return;
+  let backupData;
+  try { backupData = JSON.parse(await file.text()); }
+  catch(err){ showToast('JSONを読み込めなかったよ'); return; }
+  if(!backupData || !Array.isArray(backupData.characters) || !Array.isArray(backupData.items)){
+    showToast('対応しているグッズ帳JSONではないよ'); return;
+  }
+  const importedChars = backupData.characters;
+  const importedItems = backupData.items;
+  if(!confirm(`バックアップからキャラ${importedChars.length}件・グッズ${importedItems.length}件を取り込むよ。同じIDのデータは上書きされる場合があるよ。続ける？`)) return;
+  const btn = document.getElementById('importBtn');
+  btn.textContent = '取り込み中…';
+  let charsDone = 0, itemsDone = 0, failed = 0;
+  try{
+    // Character IDs from the backup are reused when possible; same-name cloud characters are matched first.
+    const charIdMap = new Map();
+    for(const sourceChar of importedChars){
+      const sameName = state.characters.find(c => c.name === sourceChar.name);
+      const targetId = sameName ? sameName.id : (sourceChar.id || uidGen());
+      charIdMap.set(sourceChar.id, targetId);
+      const { id, ...charData } = sourceChar;
+      try{
+        await setDoc(doc(db,'users',uid,'characters',targetId), { ...charData, name: sourceChar.name });
+        charsDone++;
+      }catch(err){ failed++; }
+    }
+    for(let idx=0; idx<importedItems.length; idx++){
+      const source = importedItems[idx];
+      btn.textContent = `取り込み中… (${idx+1}/${importedItems.length})`;
+      const normalized = normalizeSeriesIntoName(source);
+      normalized.category = broadCategory(normalized.category, normalized.name, normalized.series);
+      const { id, ...rest } = normalized;
+      const targetCharacterId = charIdMap.get(source.characterId) ||
+        (state.characters.find(c => c.id===source.characterId || c.name===importedChars.find(ch=>ch.id===source.characterId)?.name)?.id) ||
+        source.characterId;
+      try{
+        const targetId = id || uidGen();
+        await setDoc(doc(db,'users',uid,'items',targetId), { ...rest, characterId: targetCharacterId });
+        itemsDone++;
+      }catch(err){ failed++; }
+    }
+    showToast(`取り込み完了：キャラ${charsDone}件・グッズ${itemsDone}件${failed ? `（失敗${failed}件）` : ''}`);
+  }catch(err){
+    showToast('取り込み中にエラーが発生したよ: '+err.message);
+  }finally{
+    btn.textContent = '⬆️ JSONバックアップを取り込む';
+    render();
+  }
+};
+
+document.getElementById('migrateSeriesBtn').onclick = async ()=>{
+  const targets = state.items.filter(it => String(it.series||'').trim() || !String(it.name||'').trim().startsWith('【'));
+  // Include only entries with a legacy series value; don't rewrite ordinary item names.
+  const legacy = state.items.filter(it => String(it.series||'').trim() || !['缶バッジ','カード・紙類','アクリル','雑貨','ボイス'].includes(String(it.category||'')));
+  if(!legacy.length){ showToast('変換が必要なシリーズ名・カテゴリはなかったよ'); return; }
+  if(!confirm(`${legacy.length}件のグッズについて、シリーズ名を商品名の【】に移し、カテゴリを大分類へ整理するよ。実行前にJSONを書き出すのがおすすめ。続ける？`)) return;
+  const btn = document.getElementById('migrateSeriesBtn');
+  let done=0, failed=0;
+  for(let idx=0; idx<legacy.length; idx++){
+    const it = legacy[idx];
+    btn.textContent = `変換中… (${idx+1}/${legacy.length})`;
+    const normalized = normalizeSeriesIntoName(it);
+    try{
+      await updateDoc(doc(db,'users',uid,'items',it.id), {
+        name: normalized.name,
+        series: '',
+        category: broadCategory(it.category, normalized.name, it.series)
+      });
+      done++;
+    }catch(err){ failed++; }
+  }
+  btn.textContent = '🪄 シリーズ名を商品名へ一括変換';
+  showToast(`一括変換：${done}件${failed ? `（失敗${failed}件）` : ''}`);
+};
+
+document.getElementById('fillYearBtn').onclick = async ()=>{
+  const ibrahim = state.characters.find(c=>c.name==='イブラヒム');
+  if(!ibrahim){ showToast('イブラヒムのキャラが見つからなかったよ'); return; }
+  const targets = state.items.filter(it=> it.characterId===ibrahim.id && !it.releaseYear && it.series);
+  if(targets.length===0){ showToast('補完できそうなグッズはなかったよ'); return; }
+  if(!confirm(`${targets.length}件のグッズについて、シリーズ名から発売年を推測して入力するね。実行する？`)) return;
+  const btn = document.getElementById('fillYearBtn');
+  let updatedCount = 0;
+  for(let i=0; i<targets.length; i++){
+    const it = targets[i];
+    btn.textContent = `処理中… (${i+1}/${targets.length})`;
+    const guessed = guessReleaseYear(it.series||'');
+    if(guessed){
+      try{ await updateDoc(doc(db,'users',uid,'items',it.id), { releaseYear: guessed }); updatedCount++; }catch(e){}
+    }
+  }
+  btn.textContent = '📅 イブラヒムの発売年を自動入力';
+  showToast(`${updatedCount}件の発売年を入力したよ`);
+};
+
+/* ---------------- PWA installability (service worker登録) ---------------- */
+if('serviceWorker' in navigator){
+  window.addEventListener('load', ()=>{
+    navigator.serviceWorker.register('./sw.js').catch(()=>{});
+  });
+}
+</script>
+</body>
+</html>
