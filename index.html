@@ -253,18 +253,18 @@
     </div>
     <div class="field">
       <label>商品名</label>
-      <input type="text" id="itemNameInput" placeholder="例）缶バッジ（サイクリングver.）">
+      <input type="text" id="itemNameInput" placeholder="例）【VSせめよん】ランダム缶バッジ">
       <button type="button" class="searchsitebtn hidden" id="searchSiteBtn">🔍 公式サイト内で調べる</button>
       <div class="suggestrow hidden" id="nameSuggestRow"></div>
     </div>
-    <div class="field">
+    <div class="field" style="display:none">
       <label>シリーズ／企画名（任意・自由入力）</label>
       <input type="text" id="itemSeriesInput" list="seriesList" placeholder="例）VSせめよん">
       <datalist id="seriesList"></datalist>
     </div>
     <div class="field">
       <label>カテゴリ（任意・自由入力）</label>
-      <input type="text" id="itemCatInput" list="catList" placeholder="例）缶バッジ">
+      <input type="text" id="itemCatInput" list="catList" placeholder="例）缶バッジ・カード・紙類・アクリル・雑貨・ボイス">
       <datalist id="catList"></datalist>
     </div>
     <div class="field" style="display:flex; gap:10px;">
@@ -312,6 +312,19 @@
     <div class="backupbar">
       <button class="backupbtn" id="exportBtn">⬇️ 念のためJSONで書き出す</button>
     </div>
+    <div class="backupbar">
+      <button class="backupbtn" id="importBtn">⬆️ JSONバックアップを取り込む</button>
+      <input type="file" id="importFileInput" accept=".json,application/json">
+    </div>
+    <p style="font-size:11.5px; color:var(--ink-soft); line-height:1.5;">
+      JSONバックアップのキャラ・グッズをクラウドに反映するよ。同じIDのデータは更新されるため、先に念のため書き出してね。
+    </p>
+    <div class="backupbar">
+      <button class="backupbtn" id="migrateSeriesBtn">🪄 シリーズ名を商品名へ一括変換</button>
+    </div>
+    <p style="font-size:11.5px; color:var(--ink-soft); line-height:1.5;">
+      既存グッズの「シリーズ」を商品名の先頭に【シリーズ名】として移し、シリーズ欄を空にするよ。すでに【】付きの商品名は二重に付けないよ。
+    </p>
     <div class="backupbar">
       <button class="backupbtn" id="fillYearBtn">📅 イブラヒムの発売年を自動入力</button>
     </div>
@@ -373,7 +386,7 @@ import {
   getAuth, GoogleAuthProvider, signInWithPopup, onAuthStateChanged
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 import {
-  getFirestore, collection, doc, addDoc, updateDoc, deleteDoc,
+  getFirestore, collection, doc, addDoc, setDoc, updateDoc, deleteDoc,
   onSnapshot, query, serverTimestamp
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
@@ -387,13 +400,7 @@ let unsubChars = null, unsubItems = null;
 /* ---------------- App state ---------------- */
 const COLORS = ['#FF6FA5','#6FCBFF','#FFD166','#9B8CFF','#5FD9A0','#FF9A6F'];
 const CATEGORY_LIST = [
-  '缶バッジ','缶ミラー','ピンバッジ','キーホルダー','アクリルキーホルダー','ラバーキーホルダー',
-  'アクリルスタンド','アクリルパネル','アクリルブロック','アクリルジオラマ',
-  'ラバーストラップ','ラバーマスコット',
-  'ぬいぐるみ','ぱぺっと','もちコロ','ぽてコロ','クッション・抱き枕','ブランケット',
-  'ポストカード','フォト風カード','メタルカード','トレーディングカード','トランプ','ブロマイド','色紙','クリアポスター',
-  'ステッカー','タペストリー','うちわ','タオル',
-  '文具','クリアファイル','マグカップ','トートバッグ','ポーチ','アパレル','CD・ボイス収録物'
+  '缶バッジ','カード・紙類','アクリル','雑貨','ボイス'
 ];
 
 /* イブラヒムの撮り下ろしビジュアル使用グッズ・企画名 → 発売年（シリーズ名入力時の自動サジェスト用） */
@@ -715,9 +722,7 @@ function getFilteredSortedItems(chItems){
   let list = chItems.filter(i=>{
     const q = filter.q.toLowerCase();
     const matchQ = !filter.q || i.name.toLowerCase().includes(q) || (i.series||'').toLowerCase().includes(q);
-    const matchCat = filter.category==='ALL' || i.category===filter.category;
-    const matchSeries = filter.series==='ALL' || i.series===filter.series;
-    return matchQ && matchCat && matchSeries;
+    return matchQ;
   });
   list = list.slice().sort((a,b)=>
     (b.qty - a.qty) ||
@@ -727,31 +732,63 @@ function getFilteredSortedItems(chItems){
   return list;
 }
 
+function displayItemName(i){
+  const name = String(i.name||'').trim();
+  const series = String(i.series||'').trim();
+  if(!series || /^【[^】]+】/.test(name)) return name;
+  return `【${series}】${name}`;
+}
+function normalizeSeriesIntoName(item){
+  let name = String(item.name||'').trim();
+  const series = String(item.series||'').trim();
+  if(series && !/^【[^】]+】/.test(name)) name = `【${series}】${name}`;
+  return { ...item, name, series: '' };
+}
+function broadCategory(category, name='', series=''){
+  const c = String(category||'').trim();
+  const text = (c+' '+String(name||'')+' '+String(series||'')).toLowerCase();
+  if(/ボイス|voice|音声/.test(text)) return 'ボイス';
+  if(/缶バッジ|缶ミラー|ピンバッジ/.test(c)) return '缶バッジ';
+  if(/ポストカード|フォト風カード|メタルカード|トレーディングカード|トランプ|ブロマイド|色紙|クリアポスター|ステッカー|クリアファイル/.test(c)) return 'カード・紙類';
+  if(/アクリル/.test(c)) return 'アクリル';
+  return '雑貨';
+}
 function renderItemGridHtml(list){
   if(list.length===0){
-    return `<div class="empty"><div class="display">グッズがまだないよ</div><div>右下の＋から追加してね</div></div>`;
+    return `<div class="empty"><div class="display">グッズがまだないよ</div><div>カテゴリの＋から追加してね</div></div>`;
   }
-  let html = `<div class="item-grid" style="grid-template-columns:repeat(${gridCols},1fr);">`;
-  list.forEach(i=>{
-    html += `
-      <div class="item-card" data-edit="${i.id}">
-        <div class="item-img">${(()=>{ const imgs=getItemImages(i); return imgs.length ? `<img src="${imgs[0]}">${imgs.length>1?`<span class="item-img-badge">+${imgs.length-1}</span>`:''}` : '🎀'; })()}</div>
+  const grouped = new Map();
+  list.forEach(i=>{ const cat=i.category||'未分類'; if(!grouped.has(cat)) grouped.set(cat,[]); grouped.get(cat).push(i); });
+  const orderedCats = [...grouped.keys()].sort((a,b)=>{
+    const ia=countByKeyDesc(list,'category');
+    return (ia.indexOf(a)-ia.indexOf(b)) || a.localeCompare(b,'ja');
+  });
+  let html='';
+  orderedCats.forEach(cat=>{
+    const rows=grouped.get(cat);
+    const qty=rows.reduce((n,i)=>n+Number(i.qty||0),0);
+    const total=rows.reduce((n,i)=>n+Number(i.price||0)*Number(i.qty||0),0);
+    html += `<section class="category-section" style="margin:18px 0 24px;">
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:12px;">
+        <div style="min-width:0;flex:1;font-size:15px;font-weight:800;color:var(--ink);">${cat} <span style="font-size:12px;color:var(--ink-soft);font-weight:600;">${rows.length}種・${qty}個・${fmtYen(total)}</span></div>
+        <button type="button" class="menubtn category-add-btn" data-add-category="${cat.replace(/&/g,'&amp;').replace(/"/g,'&quot;')}" aria-label="${cat}にグッズを追加" style="width:34px;height:34px;font-size:22px;flex:none;">＋</button>
+      </div>
+      <div class="item-grid" style="grid-template-columns:repeat(${gridCols},1fr);">`;
+    rows.forEach(i=>{
+      const imgs=getItemImages(i);
+      html += `<div class="item-card" data-edit="${i.id}">
+        <div class="item-img">${imgs.length ? `<img src="${imgs[0]}">${imgs.length>1?`<span class="item-img-badge">+${imgs.length-1}</span>`:''}` : '🎀'}</div>
         <div class="item-body">
-          ${i.category ? `<span class="item-cat">${i.category}</span>` : ''}
-          ${i.series ? `<span class="item-cat" style="background:var(--pink-soft); color:var(--pink-deep);">${i.series}</span>` : ''}
-          <div class="item-name">${i.name}</div>
-          <div class="item-price-row">
-            <span class="item-price">${fmtYen(i.price)}</span>
-            <span class="item-qty">×${i.qty}</span>
-          </div>
+          <div class="item-name">${displayItemName(i)}</div>
+          <div class="item-price-row"><span class="item-price">${fmtYen(i.price)}</span><span class="item-qty">×${i.qty}</span></div>
           <div class="item-sub">小計 ${fmtYen(Number(i.price||0)*Number(i.qty||0))}${i.releaseYear ? ` ・ ${i.releaseYear}年` : ''}</div>
         </div>
       </div>`;
+    });
+    html += '</div></section>';
   });
-  html += '</div>';
   return html;
 }
-
 function updateItemGrid(){
   const chItems = state.items.filter(i=>i.characterId===view.characterId);
   const list = getFilteredSortedItems(chItems);
@@ -759,6 +796,7 @@ function updateItemGrid(){
   if(!gridArea) return;
   gridArea.innerHTML = renderItemGridHtml(list);
   gridArea.querySelectorAll('[data-edit]').forEach(card=>{ card.onclick = ()=>openItemModal(card.dataset.edit); });
+  gridArea.querySelectorAll('[data-add-category]').forEach(btn=>{ btn.onclick = (e)=>{ e.stopPropagation(); openItemModal(null, btn.dataset.addCategory==='未分類'?'':btn.dataset.addCategory); }; });
 }
 
 function renderDetail(){
@@ -775,13 +813,7 @@ function renderDetail(){
       <div class="searchrow">
         <input class="searchbox" id="searchInput" placeholder="商品名・シリーズ名で検索" value="${filter.q}">
       </div>
-      <div class="filterrow" style="display:flex; gap:8px; min-width:0;">
-        <select class="sortselect" id="catSelect" style="flex:1; min-width:0;">
-          ${categories.map(c=>`<option value="${c}" ${filter.category===c?'selected':''}>${c==='ALL'?'すべてのカテゴリ':c}</option>`).join('')}
-        </select>
-        ${seriesList.length>1 ? `<select class="sortselect" id="seriesSelect" style="flex:0 1 auto; width:auto; max-width:55%; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">
-          ${seriesList.map(s=>`<option value="${s}" ${filter.series===s?'selected':''}>${s==='ALL'?'すべてのシリーズ':s}</option>`).join('')}
-        </select>` : ''}
+      <div class="filterrow" style="display:flex; gap:8px; min-width:0; justify-content:flex-end;">
         <div style="position:relative; flex:none;">
           <button class="menubtn" id="gridColsBtn" style="width:38px; height:38px; font-size:15px;" aria-label="表示列数を変更">⊞</button>
           <div class="gridcols-popup hidden" id="gridColsPopup">
@@ -796,9 +828,6 @@ function renderDetail(){
 
   main.innerHTML = html;
   document.getElementById('searchInput').oninput = (e)=>{ filter.q = e.target.value; updateItemGrid(); };
-  document.getElementById('catSelect').onchange = (e)=>{ filter.category = e.target.value; updateItemGrid(); };
-  const seriesSelect = document.getElementById('seriesSelect');
-  if(seriesSelect) seriesSelect.onchange = (e)=>{ filter.series = e.target.value; updateItemGrid(); };
   document.getElementById('gridColsBtn').onclick = (e)=>{
     e.stopPropagation();
     document.getElementById('gridColsPopup').classList.toggle('hidden');
@@ -900,13 +929,13 @@ function getItemImages(it){
   if(it.image) return [it.image];
   return [];
 }
-function openItemModal(id){
+function openItemModal(id, presetCategory=''){
   const it = id ? state.items.find(i=>i.id===id) : null;
   const ch = state.characters.find(c=>c.id===view.characterId);
   document.getElementById('itemModalTitle').textContent = it ? 'グッズを編集' : 'グッズを追加';
-  document.getElementById('itemNameInput').value = it ? it.name : '';
+  document.getElementById('itemNameInput').value = it ? displayItemName(it) : '';
   document.getElementById('itemSeriesInput').value = it ? (it.series||'') : '';
-  document.getElementById('itemCatInput').value = it ? (it.category||'') : '';
+  document.getElementById('itemCatInput').value = it ? (it.category||'') : presetCategory;
   document.getElementById('itemPriceInput').value = it ? it.price : '';
   document.getElementById('itemQtyInput').value = it ? it.qty : 1;
   document.getElementById('itemYearInput').value = it && it.releaseYear ? it.releaseYear : '';
@@ -962,9 +991,13 @@ function openItemModal(id){
   };
 
   document.getElementById('itemSaveBtn').onclick = async ()=>{
-    const name = document.getElementById('itemNameInput').value.trim();
+    let name = document.getElementById('itemNameInput').value.trim();
     if(!name){ showToast('商品名を入力してね'); return; }
-    const series = document.getElementById('itemSeriesInput').value.trim();
+    let series = document.getElementById('itemSeriesInput').value.trim();
+    const seriesMatch = name.match(/^【([^】]+)】\s*/);
+    if(seriesMatch){ series = ''; }
+    else if(series){ name = `【${series}】${name}`; }
+    series = '';
     const category = document.getElementById('itemCatInput').value.trim();
     const price = Number(document.getElementById('itemPriceInput').value)||0;
     const qty = Number(document.getElementById('itemQtyInput').value)||1;
@@ -1345,6 +1378,89 @@ document.getElementById('exportBtn').onclick = ()=>{
   document.body.appendChild(a); a.click(); document.body.removeChild(a);
   URL.revokeObjectURL(url);
   showToast('書き出したよ');
+};
+
+
+/* ---------------- JSON import + series migration ---------------- */
+document.getElementById('importBtn').onclick = ()=>{
+  document.getElementById('importFileInput').click();
+};
+document.getElementById('importFileInput').onchange = async (e)=>{
+  const file = e.target.files && e.target.files[0];
+  e.target.value = '';
+  if(!file) return;
+  let backupData;
+  try { backupData = JSON.parse(await file.text()); }
+  catch(err){ showToast('JSONを読み込めなかったよ'); return; }
+  if(!backupData || !Array.isArray(backupData.characters) || !Array.isArray(backupData.items)){
+    showToast('対応しているグッズ帳JSONではないよ'); return;
+  }
+  const importedChars = backupData.characters;
+  const importedItems = backupData.items;
+  if(!confirm(`バックアップからキャラ${importedChars.length}件・グッズ${importedItems.length}件を取り込むよ。同じIDのデータは上書きされる場合があるよ。続ける？`)) return;
+  const btn = document.getElementById('importBtn');
+  btn.textContent = '取り込み中…';
+  let charsDone = 0, itemsDone = 0, failed = 0;
+  try{
+    // Character IDs from the backup are reused when possible; same-name cloud characters are matched first.
+    const charIdMap = new Map();
+    for(const sourceChar of importedChars){
+      const sameName = state.characters.find(c => c.name === sourceChar.name);
+      const targetId = sameName ? sameName.id : (sourceChar.id || uidGen());
+      charIdMap.set(sourceChar.id, targetId);
+      const { id, ...charData } = sourceChar;
+      try{
+        await setDoc(doc(db,'users',uid,'characters',targetId), { ...charData, name: sourceChar.name });
+        charsDone++;
+      }catch(err){ failed++; }
+    }
+    for(let idx=0; idx<importedItems.length; idx++){
+      const source = importedItems[idx];
+      btn.textContent = `取り込み中… (${idx+1}/${importedItems.length})`;
+      const normalized = normalizeSeriesIntoName(source);
+      normalized.category = broadCategory(normalized.category, normalized.name, normalized.series);
+      const { id, ...rest } = normalized;
+      const targetCharacterId = charIdMap.get(source.characterId) ||
+        (state.characters.find(c => c.id===source.characterId || c.name===importedChars.find(ch=>ch.id===source.characterId)?.name)?.id) ||
+        source.characterId;
+      try{
+        const targetId = id || uidGen();
+        await setDoc(doc(db,'users',uid,'items',targetId), { ...rest, characterId: targetCharacterId });
+        itemsDone++;
+      }catch(err){ failed++; }
+    }
+    showToast(`取り込み完了：キャラ${charsDone}件・グッズ${itemsDone}件${failed ? `（失敗${failed}件）` : ''}`);
+  }catch(err){
+    showToast('取り込み中にエラーが発生したよ: '+err.message);
+  }finally{
+    btn.textContent = '⬆️ JSONバックアップを取り込む';
+    render();
+  }
+};
+
+document.getElementById('migrateSeriesBtn').onclick = async ()=>{
+  const targets = state.items.filter(it => String(it.series||'').trim() || !String(it.name||'').trim().startsWith('【'));
+  // Include only entries with a legacy series value; don't rewrite ordinary item names.
+  const legacy = state.items.filter(it => String(it.series||'').trim() || !['缶バッジ','カード・紙類','アクリル','雑貨','ボイス'].includes(String(it.category||'')));
+  if(!legacy.length){ showToast('変換が必要なシリーズ名・カテゴリはなかったよ'); return; }
+  if(!confirm(`${legacy.length}件のグッズについて、シリーズ名を商品名の【】に移し、カテゴリを大分類へ整理するよ。実行前にJSONを書き出すのがおすすめ。続ける？`)) return;
+  const btn = document.getElementById('migrateSeriesBtn');
+  let done=0, failed=0;
+  for(let idx=0; idx<legacy.length; idx++){
+    const it = legacy[idx];
+    btn.textContent = `変換中… (${idx+1}/${legacy.length})`;
+    const normalized = normalizeSeriesIntoName(it);
+    try{
+      await updateDoc(doc(db,'users',uid,'items',it.id), {
+        name: normalized.name,
+        series: '',
+        category: broadCategory(it.category, normalized.name, it.series)
+      });
+      done++;
+    }catch(err){ failed++; }
+  }
+  btn.textContent = '🪄 シリーズ名を商品名へ一括変換';
+  showToast(`一括変換：${done}件${failed ? `（失敗${failed}件）` : ''}`);
 };
 
 document.getElementById('fillYearBtn').onclick = async ()=>{
