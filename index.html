@@ -316,11 +316,6 @@
       <div class="suggestrow hidden" id="nameSuggestRow"></div>
     </div>
     <div class="field">
-      <label>シリーズ／企画名（候補から選択・任意）</label>
-      <input type="text" id="itemSeriesInput" list="seriesList" placeholder="シリーズ名を入力"><div id="seriesSuggestBox" class="name-suggest-row hidden"></div>
-      <datalist id="seriesList"></datalist>
-    </div>
-    <div class="field">
       <label>カテゴリ（任意・自由入力）</label>
       <input type="text" id="itemCatInput" list="catList" placeholder="カテゴリ名を入力"><div id="catSuggestBox" class="name-suggest-row hidden"></div>
       <datalist id="catList"><option value="缶バッジ"><option value="カード・紙類"><option value="アクリル"><option value="雑貨"><option value="ボイス"></datalist>
@@ -389,6 +384,15 @@
 <div class="overlay" id="backupOverlay">
   <div class="sheet">
     <h2>設定</h2>
+    <div class="field" style="margin-top:12px;">
+      <label>グッズ一覧の並び替え</label>
+      <div style="display:flex;gap:8px;align-items:center;">
+        <select id="settingsSortMode" class="sortselect" style="flex:1;">
+          <option value="registered">登録順</option><option value="qty">数量順</option><option value="name">名前順</option><option value="price">単価順</option><option value="total">グッズ別総額順</option><option value="year">発売年順</option>
+        </select>
+        <button type="button" id="settingsSortDirection" class="sortselect">↓ 降順</button>
+      </div>
+    </div>
     <p style="font-size:13px; color:var(--ink-soft); line-height:1.6;">
       データはGoogleアカウントに紐づけてクラウドに自動保存されてるよ。他の端末で同じアカウントでログインすれば、追加した瞬間にそのまま反映される。
     </p>
@@ -618,6 +622,32 @@ function totalImageBytes(images){
   return images.reduce((s,img)=> s + (img ? img.length : 0), 0);
 }
 const MAX_IMAGE_BYTES = 650000; // Firestoreの1ドキュメント1MB制限に対する安全マージン
+function compressDataUrl(src, maxDim=480, quality=0.62){
+  return new Promise((resolve,reject)=>{
+    const img=new Image();
+    img.onload=()=>{
+      let w=img.width,h=img.height;
+      if(w>maxDim||h>maxDim){
+        if(w>=h){h=Math.round(h*maxDim/w);w=maxDim;}
+        else{w=Math.round(w*maxDim/h);h=maxDim;}
+      }
+      const canvas=document.createElement('canvas');canvas.width=w;canvas.height=h;
+      const ctx=canvas.getContext('2d');
+      // JPEG does not retain transparency; use a white base so circular crops never turn black.
+      ctx.fillStyle='#fff';ctx.fillRect(0,0,w,h);
+      ctx.drawImage(img,0,0,w,h);
+      resolve(canvas.toDataURL('image/jpeg',quality));
+    };
+    img.onerror=()=>reject(new Error('画像の圧縮に失敗したよ'));
+    img.src=src;
+  });
+}
+async function optimizeImagesForSave(images){
+  let result=await Promise.all(images.map(src=>compressDataUrl(src,480,0.62)));
+  if(totalImageBytes(result)>MAX_IMAGE_BYTES) result=await Promise.all(images.map(src=>compressDataUrl(src,360,0.48)));
+  if(totalImageBytes(result)>MAX_IMAGE_BYTES) result=await Promise.all(images.map(src=>compressDataUrl(src,280,0.38)));
+  return result;
+}
 
 /* ---------------- Auth ---------------- */
 document.getElementById('googleSignInBtn').onclick = async ()=>{
@@ -844,7 +874,8 @@ function getFilteredSortedItems(chItems){
     const name = String(i.name||'').toLowerCase();
     const series = String(i.series||'').toLowerCase();
     const matchesText = !q || name.includes(q) || series.includes(q);
-    const matchesSeries = seriesFilter==='ALL' || String(i.series||'').trim()===seriesFilter;
+    const seriesInName=(String(i.name||'').match(/^【([^】]+)】/)||[])[1]||String(i.series||'').trim();
+    const matchesSeries = seriesFilter==='ALL' || seriesInName===seriesFilter;
     const matchesUnclassified = !unclassifiedOnly || !String(i.pageId||i.characterId||'').trim();
     return matchesText && matchesSeries && matchesUnclassified;
   });
@@ -956,20 +987,8 @@ function renderDetail(){
       <div class="filterrow" style="display:flex; gap:8px; min-width:0; align-items:center; justify-content:space-between; flex-wrap:wrap;">
         <select id="seriesFilterSelect" class="sortselect" aria-label="シリーズ名で絞り込み">
           <option value="ALL">すべてのシリーズ</option>
-          ${Array.from(new Set(chItems.map(i=>String(i.series||'').trim()).filter(Boolean))).sort((a,b)=>a.localeCompare(b,'ja')).map(s=>`<option value="${s.replace(/&/g,'&amp;').replace(/"/g,'&quot;')}">${s}</option>`).join('')}
+          ${Array.from(new Set(chItems.map(i=>((String(i.name||'').match(/^【([^】]+)】/)||[])[1]||String(i.series||'').trim())).filter(Boolean))).sort((a,b)=>a.localeCompare(b,'ja')).map(s=>`<option value="${s.replace(/&/g,'&amp;').replace(/"/g,'&quot;')}">${s}</option>`).join('')}
         </select>
-        <div class="sort-menu-wrap" style="position:relative;flex:1;min-width:0;">
-          <button type="button" id="sortMenuBtn" class="sortselect" style="width:100%;text-align:left;display:flex;align-items:center;justify-content:space-between;gap:8px;" aria-expanded="false">
-            <span>並び順：<strong id="sortCurrentLabel">個数</strong></span><span id="sortCurrentArrow">↓</span>
-          </button>
-          <div id="sortMenuPopup" class="sort-menu-popup hidden" role="menu" style="position:absolute;z-index:50;left:0;bottom:calc(100% + 8px);width:min(270px,82vw);padding:8px;border:1px solid var(--line);border-radius:18px;background:var(--panel,rgba(255,255,255,.96));box-shadow:0 10px 32px rgba(0,0,0,.16);backdrop-filter:blur(18px);">
-            <div style="font-size:11px;color:var(--ink-soft);padding:5px 10px;">並び順</div>
-            <div id="sortMenuOptions"></div>
-            <div style="border-top:1px solid var(--line);margin-top:6px;padding-top:6px;">
-              <label style="display:flex;align-items:center;justify-content:space-between;gap:12px;padding:8px 10px;font-size:13px;">ページ未分類のみ表示<input id="unclassifiedOnlyToggle" type="checkbox" style="width:18px;height:18px;"></label>
-            </div>
-          </div>
-        </div>
         <div style="position:relative; flex:none;">
           <button class="menubtn" id="gridColsBtn" style="width:38px; height:38px; font-size:15px;" aria-label="表示列数を変更">⊞</button>
           <div class="gridcols-popup hidden" id="gridColsPopup">
@@ -983,37 +1002,12 @@ function renderDetail(){
     <div id="bulkMoveBar" class="bulk-move-bar hidden">
       <span id="bulkSelectedCount">0件選択</span>
       <select id="bulkMoveCategory"><option value="">移動先カテゴリ</option>${Array.from(new Set([...CATEGORY_LIST,...chItems.map(i=>i.category).filter(Boolean)])).map(c=>`<option value="${c}">${c}</option>`).join("")}</select>
-      <button id="bulkMoveApplyBtn" type="button">移動</button><button id="bulkMoveCancelBtn" type="button" class="bulk-cancel">終了</button>
+      <button id="bulkMoveApplyBtn" type="button">移動</button><button id="bulkMoveCancelBtn" type="button" class="bulk-cancel">移動して終了</button>
     </div>
   `;
 
   main.innerHTML = html;
   document.getElementById('searchInput').oninput = (e)=>{ filter.q = e.target.value; updateItemGrid(); };
-  const sortLabels={qty:'数量順',name:'名前順',price:'単価順',total:'グッズ別総額順',year:'発売年順',registered:'登録順'};
-  const sortPopup=document.getElementById('sortMenuPopup');
-  const sortBtn=document.getElementById('sortMenuBtn');
-  const sortOptions=document.getElementById('sortMenuOptions');
-  function renderSortMenu(){
-    document.getElementById('sortCurrentLabel').textContent=sortLabels[sortMode]||'数量順';
-    document.getElementById('sortCurrentArrow').textContent=sortDirection==='asc'?'↑':'↓';
-    sortOptions.innerHTML=Object.entries(sortLabels).map(([key,label])=>`<button type="button" role="menuitem" data-sort-key="${key}" class="${sortMode===key?'active':''}"><span>${label}</span><span>${sortMode===key?(sortDirection==='asc'?'↑':'↓'):''}</span></button>`).join('');
-    sortOptions.querySelectorAll('[data-sort-key]').forEach(btn=>btn.onclick=()=>{
-      const key=btn.dataset.sortKey;
-      if(sortMode===key){sortDirection=sortDirection==='asc'?'desc':'asc';}
-      else{sortMode=key;sortDirection=key==='name'?'asc':'desc';}
-      localStorage.setItem('oshikatsu_sortMode',sortMode);
-      localStorage.setItem('oshikatsu_sortDirection',sortDirection);
-      renderSortMenu();updateItemGrid();
-      // Reopen menu so the arrow and active item can be seen immediately.
-      sortPopup.classList.remove('hidden');sortBtn.setAttribute('aria-expanded','true');
-    });
-    const unc=document.getElementById('unclassifiedOnlyToggle');
-    unc.checked=unclassifiedOnly;
-    unc.onchange=()=>{unclassifiedOnly=unc.checked;localStorage.setItem('oshikatsu_unclassifiedOnly',String(unclassifiedOnly));updateItemGrid();};
-  }
-  renderSortMenu();
-  sortBtn.onclick=(e)=>{e.stopPropagation();sortPopup.classList.toggle('hidden');sortBtn.setAttribute('aria-expanded',String(!sortPopup.classList.contains('hidden')));};
-  document.addEventListener('click',(e)=>{if(!e.target.closest('.sort-menu-wrap')){sortPopup.classList.add('hidden');sortBtn.setAttribute('aria-expanded','false');}});
   const seriesFilterSelect=document.getElementById('seriesFilterSelect');
   seriesFilterSelect.value=seriesFilter;
   seriesFilterSelect.onchange=e=>{seriesFilter=e.target.value;updateItemGrid();};
@@ -1049,7 +1043,14 @@ function renderDetail(){
   if(moveBar){
     moveBar.classList.toggle('hidden',!bulkMoveMode);
     document.getElementById('bulkSelectedCount').textContent=`${bulkSelectedIds.size}件選択`;
-    document.getElementById('bulkMoveCancelBtn').onclick=()=>{bulkMoveMode=false;bulkSelectedIds.clear();renderDetail();};
+    document.getElementById('bulkMoveCancelBtn').onclick=async()=>{
+      const cat=document.getElementById('bulkMoveCategory').value;
+      if(!bulkSelectedIds.size){showToast('移動するグッズを選んでね');return;}
+      if(!cat){showToast('移動先カテゴリを選んでね');return;}
+      let done=0,failed=0;
+      for(const id of Array.from(bulkSelectedIds)){try{await updateDoc(doc(db,'users',uid,'items',id),{category:cat});done++;}catch(e){failed++;}}
+      bulkSelectedIds.clear();bulkMoveMode=false;showToast(`移動完了：${done}件${failed?`（失敗${failed}件）`:""}`);renderDetail();
+    };
     document.getElementById('bulkMoveApplyBtn').onclick=async()=>{
       const cat=document.getElementById('bulkMoveCategory').value;
       if(!cat){showToast('移動先カテゴリを選んでね');return;}
@@ -1158,7 +1159,6 @@ function openItemModal(id, presetCategory=''){
   const ch = state.characters.find(c=>c.id===view.characterId);
   document.getElementById('itemModalTitle').textContent = it ? 'グッズを編集' : 'グッズを追加';
   document.getElementById('itemNameInput').value = it ? displayItemName(it) : '';
-  document.getElementById('itemSeriesInput').value = it ? ((it.series||'').trim() || ((String(it.name||'').match(/^【([^】]+)】/)||[])[1] || '')) : '';
   document.getElementById('itemCatInput').value = it ? (it.category||'') : presetCategory;
   document.getElementById('itemPriceInput').value = it ? it.price : '';
   document.getElementById('itemQtyInput').value = it ? it.qty : 1;
@@ -1172,22 +1172,8 @@ function openItemModal(id, presetCategory=''){
   document.getElementById('nameSuggestRow').classList.add('hidden');
   document.getElementById('nameSuggestRow').innerHTML = '';
 
-  const seriesInput = document.getElementById('itemSeriesInput');
   const yearInput = document.getElementById('itemYearInput');
-  seriesInput.onblur = ()=>{
-    if(!ch || ch.name!=='イブラヒム') return;
-    if(yearInput.value) return; // すでに入力済みなら上書きしない
-    const guessed = guessReleaseYear(seriesInput.value.trim());
-    if(guessed){
-      const row = document.getElementById('nameSuggestRow');
-      row.classList.remove('hidden');
-      const chip = document.createElement('button');
-      chip.type = 'button'; chip.className = 'suggest-chip';
-      chip.textContent = `発売年: ${guessed}年 ✓`;
-      chip.onclick = ()=>{ yearInput.value = guessed; chip.remove(); };
-      row.appendChild(chip);
-    }
-  };
+
 
   const usedCats = Array.from(new Set(state.items.map(i=>i.category).filter(Boolean)));
   const allCats = Array.from(new Set([...CATEGORY_LIST, ...usedCats]));
@@ -1200,7 +1186,7 @@ function openItemModal(id, presetCategory=''){
   const curatedSeries = (typeof IBRAHIM_SERIES_YEAR !== 'undefined') ? Object.keys(IBRAHIM_SERIES_YEAR) : [];
   const allSeries = Array.from(new Set([...usedSeries, ...seriesFromNames, ...curatedSeries])).sort((a,b)=>a.localeCompare(b,'ja'));
   document.getElementById('seriesList').innerHTML = allSeries.map(s=>`<option value="${s.replace(/&/g,'&amp;').replace(/"/g,'&quot;')}">`).join('');
-  const seriesBox=document.getElementById('seriesSuggestBox'),catBox=document.getElementById('catSuggestBox');
+  const catBox=document.getElementById('catSuggestBox');
   const showMatches=(input,box,values)=>{
     const q=input.value.trim().toLocaleLowerCase();
     if(!q){box.classList.add('hidden');box.innerHTML='';return;}
@@ -1257,27 +1243,23 @@ function openItemModal(id, presetCategory=''){
 document.getElementById('itemSaveBtn').onclick = async ()=>{
     let name = document.getElementById('itemNameInput').value.trim();
     if(!name){ showToast('商品名を入力してね'); return; }
-    let series = document.getElementById('itemSeriesInput').value.trim();
     const seriesMatch = name.match(/^【([^】]+)】\s*/);
-    if(seriesMatch){
-      const chosenSeries = series || seriesMatch[1].trim();
-      name = name.replace(/^【[^】]+】\s*/, `【${chosenSeries}】`);
-    } else if(series){
-      name = `【${series}】${name}`;
-    }
-    series = '';
+    if(it && !seriesMatch && String(it.series||'').trim()) name=`【${String(it.series).trim()}】${name}`;
+    const series = '';
     const category = broadCategory(document.getElementById('itemCatInput').value.trim(), name, '');
     const price = Number(document.getElementById('itemPriceInput').value)||0;
     const qty = Number(document.getElementById('itemQtyInput').value)||1;
     const releaseYear = Number(document.getElementById('itemYearInput').value)||null;
     const memo = document.getElementById('itemMemoInput').value.trim();
-    if(totalImageBytes(itemImgTemp) > MAX_IMAGE_BYTES){
-      showToast('画像の合計サイズが大きすぎるよ。枚数を減らしてね');
-      return;
-    }
-    document.getElementById('itemSaveBtn').textContent = '保存中…';
+    document.getElementById('itemSaveBtn').textContent = '画像を最適化中…';
+    let images;
     try{
-      const images = itemImgTemp;
+      images = await optimizeImagesForSave(itemImgTemp);
+      if(totalImageBytes(images) > MAX_IMAGE_BYTES){
+        showToast('画像の合計サイズがまだ大きいよ。画像の枚数を減らしてね');
+        document.getElementById('itemSaveBtn').textContent = '保存する';
+        return;
+      }
       if(it){
         await updateDoc(doc(db,'users',uid,'items',it.id), { name, series, category, price, qty, releaseYear, memo, images, image: images[0]||null, imageShape:itemImageShape });
         await writeChangeHistory('更新',it.id,it,{...it,name,series,category,price,qty,releaseYear,memo,imageShape:itemImageShape});
@@ -1432,12 +1414,13 @@ document.getElementById('cropSquareBtn').onclick=()=>{if(!cropContext)return;cro
 document.getElementById('cropCancelBtn').onclick=()=>{cropContext=null;closeModal('cropOverlay');};
 document.getElementById('cropApplyBtn').onclick=()=>{
   if(!cropContext)return;
-  const c=document.createElement('canvas');c.width=c.height=640;
+  const c=document.createElement('canvas');c.width=c.height=480;
   const ctx=c.getContext('2d');
   const state={...cropContext,frameSize:1,x:cropContext.x*cropContext.frameSize,y:cropContext.y*cropContext.frameSize};
-  // Export only the selected frame, filling the output square/circle.
-  drawCropImage(ctx,640,state,true);
-  itemImgTemp[cropContext.index]=c.toDataURL('image/png');
+  // Use a white base and compressed JPEG: the UI clips circle-shaped thumbnails to a circle.
+  ctx.fillStyle='#fff';ctx.fillRect(0,0,c.width,c.height);
+  drawCropImage(ctx,480,state,true);
+  itemImgTemp[cropContext.index]=c.toDataURL('image/jpeg',0.68);
   itemImageShape=cropContext.shape;
   cropContext=null;closeModal('cropOverlay');updateItemImgPick();
 };
@@ -1736,6 +1719,16 @@ document.getElementById('categoryTotalsBtn').onclick=()=>{
   openModal('categoryTotalsOverlay');
 };
 document.getElementById('categoryTotalsCloseBtn').onclick=()=>closeModal('categoryTotalsOverlay');
+function syncSettingsSortControls(){
+ const sm=document.getElementById('settingsSortMode'),sd=document.getElementById('settingsSortDirection');
+ if(!sm||!sd)return;sm.value=sortMode;sd.textContent=sortDirection==='asc'?'↑ 昇順':'↓ 降順';
+}
+const settingsSortModeEl=document.getElementById('settingsSortMode');
+if(settingsSortModeEl)settingsSortModeEl.onchange=()=>{sortMode=settingsSortModeEl.value;localStorage.setItem('oshikatsu_sortMode',sortMode);syncSettingsSortControls();};
+const settingsSortDirEl=document.getElementById('settingsSortDirection');
+if(settingsSortDirEl)settingsSortDirEl.onclick=()=>{sortDirection=sortDirection==='asc'?'desc':'asc';localStorage.setItem('oshikatsu_sortDirection',sortDirection);syncSettingsSortControls();};
+syncSettingsSortControls();
+
 function renderCategoryOrderSettings(){
   const allCats=normalizeCategoryOrder([...CATEGORY_LIST,...state.items.map(i=>String(i.category||'').trim()).filter(Boolean)]);
   const el=document.getElementById('categoryOrderList');
