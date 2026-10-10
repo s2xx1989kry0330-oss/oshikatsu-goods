@@ -121,6 +121,22 @@
   .item-tile-img.square img{border-radius:2px;}
   .item-tile-qty{position:absolute;right:-2px;top:-5px;z-index:2;min-width:36px;height:28px;padding:0 7px;border-radius:999px;background:var(--pink);color:#fff;font-size:14px;font-weight:800;display:flex;align-items:center;justify-content:center;box-shadow:0 2px 5px #0002;}
   .item-tile-name{margin-top:8px;font-size:11.5px;line-height:1.35;font-weight:650;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;overflow-wrap:anywhere;}
+  .crop-sheet{background:#111!important;color:#fff!important;}
+  .crop-topbar{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:18px;}
+  .crop-topbar strong{font-size:16px;}
+  .crop-topbar .btn{padding:10px 14px;white-space:nowrap;}
+  .crop-mode-row{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:12px;font-size:11px;color:#bbb;}
+  .crop-mode-row button,.crop-rotate-button-row button{border:0;border-radius:999px;padding:9px 13px;background:#333;color:#fff;}
+  .crop-mode-row button.active{background:#fff;color:#111;}
+  .crop-stage{background:#000!important;padding:8px 0 12px!important;}
+  #cropCanvas{width:min(82vw,360px)!important;height:min(82vw,360px)!important;max-width:360px!important;max-height:360px!important;background:#000!important;border:0!important;border-radius:0!important;touch-action:none;}
+  .crop-rotate-button-row{display:flex;justify-content:center;gap:12px;margin:8px 0 14px;}
+  .crop-controls{display:grid;grid-template-columns:1fr;gap:11px;}
+  .crop-controls label{display:flex;flex-wrap:wrap;align-items:center;gap:8px;color:#eee;font-size:12px;}
+  .crop-controls label input{width:100%;accent-color:#f5c842;}
+  .crop-shape-toggle{margin-top:14px;}
+  .crop-shape-toggle button{background:#333;color:#fff;border-color:#444;}
+  .crop-shape-toggle button.active{background:#fff;color:#111;border-color:#fff;}
   .crop-preview-wrap{display:flex;justify-content:center;padding:8px 0 12px;}
   #cropCanvas{width:min(72vw,280px);height:min(72vw,280px);max-width:280px;max-height:280px;object-fit:contain;background:var(--card);border:1px solid var(--line);border-radius:12px;touch-action:none;}
   .crop-controls{display:grid;grid-template-columns:1fr;gap:10px;}
@@ -130,6 +146,14 @@
   .shape-toggle button{flex:1;padding:10px;border:1px solid var(--line);border-radius:12px;background:var(--card);color:var(--ink);font-weight:700;}
   .shape-toggle button.active{border-color:var(--pink);background:var(--pink-soft);}
   .category-total-card{border:1px solid var(--line);border-radius:16px;padding:12px;margin-bottom:8px;background:var(--card);}
+  .item-tile.bulk-selected .item-tile-img{outline:3px solid var(--accent);outline-offset:2px;}
+  .bulk-check{position:absolute;right:2px;bottom:26px;width:22px;height:22px;border-radius:50%;background:var(--accent);color:white;font-weight:800;display:flex;align-items:center;justify-content:center;}
+  .bulk-move-bar{position:sticky;bottom:12px;z-index:20;display:flex;align-items:center;gap:7px;background:var(--card);border:1px solid var(--line);border-radius:16px;padding:10px;box-shadow:0 5px 20px #0002;margin-top:12px;}
+  .bulk-move-bar.hidden{display:none;}
+  .bulk-move-bar select{min-width:0;flex:1;padding:9px;border:1px solid var(--line);border-radius:10px;background:var(--card);color:var(--ink);}
+  .bulk-move-bar button{padding:9px 10px;border:0;border-radius:10px;background:var(--accent);color:white;font-weight:800;}
+  .bulk-move-bar .bulk-cancel{background:var(--line);color:var(--ink);}
+
   @media(max-width:390px){.item-grid{gap:14px 8px}.item-tile-name{font-size:10.5px}.item-tile-qty{height:25px;min-width:31px;font-size:12px;}}
 
   .item-card{background:var(--card); border-radius:var(--radius); box-shadow:var(--shadow); overflow:hidden; border:1px solid var(--line); display:flex; flex-direction:column; text-align:left; position:relative; cursor:pointer; transition:transform .1s ease;}
@@ -291,12 +315,12 @@
     </div>
     <div class="field">
       <label>シリーズ／企画名（候補から選択・任意）</label>
-      <input type="text" id="itemSeriesInput" list="seriesList" placeholder="例）VSせめよん">
+      <input type="text" id="itemSeriesInput" list="seriesList" placeholder="シリーズ名を入力"><div id="seriesSuggestBox" class="name-suggest-row hidden"></div>
       <datalist id="seriesList"></datalist>
     </div>
     <div class="field">
       <label>カテゴリ（任意・自由入力）</label>
-      <input type="text" id="itemCatInput" list="catList" placeholder="例）缶バッジ・カード・紙類・アクリル・雑貨・ボイス">
+      <input type="text" id="itemCatInput" list="catList" placeholder="カテゴリ名を入力"><div id="catSuggestBox" class="name-suggest-row hidden"></div>
       <datalist id="catList"><option value="缶バッジ"><option value="カード・紙類"><option value="アクリル"><option value="雑貨"><option value="ボイス"></datalist>
     </div>
     <div class="field" style="display:flex; gap:10px;">
@@ -330,16 +354,33 @@
 </div>
 
 <!-- Image crop editor -->
-<div class="overlay" id="cropOverlay"><div class="sheet">
-  <h2>画像を切り抜く</h2>
-  <p style="font-size:12px;color:var(--ink-soft);">プレビューをドラッグ、またはスライダーで位置と拡大率を調整してね。</p>
-  <div class="crop-preview-wrap"><canvas id="cropCanvas" width="600" height="600"></canvas></div>
-  <div class="crop-controls">
-    <label>拡大率 <input type="range" id="cropZoom" min="1" max="3" step="0.05" value="1"></label>
-    <label>左右 <input type="range" id="cropX" min="-1" max="1" step="0.01" value="0"></label>
-    <label>上下 <input type="range" id="cropY" min="-1" max="1" step="0.01" value="0"></label>
+<div class="overlay" id="cropOverlay"><div class="sheet crop-sheet">
+  <div class="crop-topbar">
+    <button type="button" class="btn ghost" id="cropCancelBtn">キャンセル</button>
+    <strong>画像を切り抜き</strong>
+    <button type="button" class="btn primary" id="cropApplyBtn">完了</button>
   </div>
-  <div class="sheet-actions"><button class="btn ghost" id="cropCancelBtn">キャンセル</button><button class="btn primary" id="cropApplyBtn">切り抜きを適用</button></div>
+  <div class="crop-mode-row">
+    <button type="button" id="cropModeButton" class="active">切り抜き</button>
+    <span>画像をドラッグして位置を調整</span>
+    <button type="button" id="cropResetBtn">最初から</button>
+  </div>
+  <div class="crop-preview-wrap crop-stage"><canvas id="cropCanvas" width="600" height="600"></canvas></div>
+  <div class="crop-rotate-button-row">
+    <button type="button" id="cropRotateLeftBtn" aria-label="左に90度回転">↶ 90°</button>
+    <button type="button" id="cropRotateRightBtn" aria-label="右に90度回転">↷ 90°</button>
+  </div>
+  <div class="crop-controls">
+    <label>切り抜き枠の大きさ <input type="range" id="cropFrameSize" min="0.45" max="1" step="0.01" value="0.9"></label>
+    <label>拡大・縮小 <input type="range" id="cropZoom" min="1" max="4" step="0.01" value="1"></label>
+    <label>左右の位置 <input type="range" id="cropX" min="-1" max="1" step="0.01" value="0"></label>
+    <label>上下の位置 <input type="range" id="cropY" min="-1" max="1" step="0.01" value="0"></label>
+    <label>傾き <input type="range" id="cropAngle" min="-45" max="45" step="1" value="0"><span id="cropAngleLabel">0°</span></label>
+  </div>
+  <div class="shape-toggle crop-shape-toggle">
+    <button type="button" id="cropSquareBtn">四角</button>
+    <button type="button" id="cropCircleBtn">円</button>
+  </div>
 </div></div>
 
 <!-- Settings modal -->
@@ -515,6 +556,8 @@ let gridCols = Number(localStorage.getItem('oshikatsu_gridCols')) || 2;
 let sortMode = localStorage.getItem('oshikatsu_sortMode') || 'qty-desc';
 let collapsedCategories = JSON.parse(localStorage.getItem('oshikatsu_collapsedCategories') || '{}');
 let itemImageShape = 'square';
+let bulkMoveMode = false;
+let bulkSelectedIds = new Set();
 let cropContext = null;
 let dragCtx = null;
 let justDragged = false;
@@ -840,14 +883,14 @@ function renderItemGridHtml(list){
       <button type="button" class="menubtn category-add-btn" data-add-category="${safe}" aria-label="${cat}にグッズを追加" style="width:34px;height:34px;font-size:22px;">＋</button>
     </div>`;
     if(!collapsed){
-      out+='<div class="item-grid" style="grid-template-columns:repeat(4,minmax(0,1fr));">';
+      out+=`<div class="item-grid" style="grid-template-columns:repeat(${gridCols},minmax(0,1fr));">`;
       rows.forEach(i=>{
         const imgs=getItemImages(i),shape=i.imageShape||(/缶バッジ/.test(cat)?'circle':'square');
-        out+=`<button type="button" class="item-tile" data-edit="${i.id}" aria-label="${displayItemName(i)}を編集">
+        out+=`<button type="button" class="item-tile ${bulkMoveMode && bulkSelectedIds.has(i.id) ? "bulk-selected" : ""}" data-edit="${i.id}" data-item-id="${i.id}" aria-label="${displayItemName(i)}を編集">
           <div class="item-tile-img ${shape==='circle'?'circle':'square'}">${imgs.length?`<img src="${imgs[0]}">`:'🎀'}
           ${imgs.length>1?`<span class="item-img-badge">+${imgs.length-1}</span>`:''}
           <span class="item-tile-qty">${i.qty}</span></div>
-          <div class="item-tile-name">${displayItemName(i)}</div></button>`;
+          <div class="item-tile-name">${displayItemName(i)}</div>${bulkMoveMode?`<span class="bulk-check">${bulkSelectedIds.has(i.id)?"✓":"○"}</span>`:""}</button>`;
       });
       out+='</div>';
     }
@@ -861,9 +904,16 @@ function updateItemGrid(){
   const gridArea = document.getElementById('itemGridArea');
   if(!gridArea) return;
   gridArea.innerHTML = renderItemGridHtml(list);
-  gridArea.querySelectorAll('[data-edit]').forEach(card=>{ card.onclick = ()=>openItemModal(card.dataset.edit); });
+  gridArea.querySelectorAll('[data-edit]').forEach(card=>{card.onclick=(e)=>{
+      if(!bulkMoveMode){openItemModal(card.dataset.edit);return;}
+      e.preventDefault();const id=card.dataset.itemId;
+      if(bulkSelectedIds.has(id))bulkSelectedIds.delete(id);else bulkSelectedIds.add(id);
+      updateItemGrid();const count=document.getElementById('bulkSelectedCount');if(count)count.textContent=`${bulkSelectedIds.size}件選択`;
+    };});
   gridArea.querySelectorAll('[data-add-category]').forEach(btn=>{ btn.onclick = (e)=>{ e.stopPropagation(); openItemModal(null, btn.dataset.addCategory==='未分類'?'':btn.dataset.addCategory); }; });
-  gridArea.querySelectorAll('[data-toggle-category]').forEach(btn=>{btn.onclick=()=>{const cat=btn.dataset.toggleCategory;collapsedCategories[cat]=!collapsedCategories[cat];localStorage.setItem('oshikatsu_collapsedCategories',JSON.stringify(collapsedCategories));updateItemGrid();};});
+  gridArea.querySelectorAll('[data-toggle-category]').forEach(btn=>{
+    btn.onclick=(e)=>{e.preventDefault();const cat=btn.dataset.toggleCategory;collapsedCategories[cat]=!collapsedCategories[cat];localStorage.setItem('oshikatsu_collapsedCategories',JSON.stringify(collapsedCategories));updateItemGrid();};
+  });
 }
 
 function renderDetail(){
@@ -876,7 +926,7 @@ function renderDetail(){
 
   let html = `
     <div class="toolbar">
-      <button class="scanbtn" id="scanBtn" ${GEMINI_API_KEY ? '' : 'disabled'}>📷 レシート・注文控えから追加</button>
+      <button class="scanbtn" id="scanBtn" ${GEMINI_API_KEY ? '' : 'disabled'}>📷 レシート・注文控えから追加</button><button class="scanbtn" id="bulkMoveModeBtn" type="button">☑️ 一括移動</button>
       <div class="searchrow">
         <input class="searchbox" id="searchInput" placeholder="商品名・シリーズ名で検索" value="${filter.q}">
       </div>
@@ -894,13 +944,18 @@ function renderDetail(){
         <div style="position:relative; flex:none;">
           <button class="menubtn" id="gridColsBtn" style="width:38px; height:38px; font-size:15px;" aria-label="表示列数を変更">⊞</button>
           <div class="gridcols-popup hidden" id="gridColsPopup">
-            <button type="button" data-action="inc" ${gridCols>=4?'disabled':''}>＋ 列を増やす</button>
+            <button type="button" data-action="inc" ${gridCols>=6?'disabled':''}>＋ 列を増やす</button>
             <button type="button" data-action="dec" ${gridCols<=2?'disabled':''}>− 列を減らす</button>
           </div>
         </div>
       </div>
     </div>
     <div id="itemGridArea">${renderItemGridHtml(list)}</div>
+    <div id="bulkMoveBar" class="bulk-move-bar hidden">
+      <span id="bulkSelectedCount">0件選択</span>
+      <select id="bulkMoveCategory"><option value="">移動先カテゴリ</option>${Array.from(new Set([...CATEGORY_LIST,...chItems.map(i=>i.category).filter(Boolean)])).map(c=>`<option value="${c}">${c}</option>`).join("")}</select>
+      <button id="bulkMoveApplyBtn" type="button">移動</button><button id="bulkMoveCancelBtn" type="button" class="bulk-cancel">終了</button>
+    </div>
   `;
 
   main.innerHTML = html;
@@ -914,7 +969,7 @@ function renderDetail(){
   };
   document.getElementById('gridColsPopup').querySelectorAll('button').forEach(b=>{
     b.onclick = ()=>{
-      if(b.dataset.action==='inc') gridCols = Math.min(4, gridCols+1);
+      if(b.dataset.action==='inc') gridCols = Math.min(6, gridCols+1);
       else gridCols = Math.max(2, gridCols-1);
       localStorage.setItem('oshikatsu_gridCols', gridCols);
       document.getElementById('gridColsPopup').classList.add('hidden');
@@ -922,7 +977,32 @@ function renderDetail(){
     };
   });
   document.getElementById('itemGridArea').querySelectorAll('[data-edit]').forEach(card=>{ card.onclick = ()=>openItemModal(card.dataset.edit); });
+  document.getElementById('itemGridArea').querySelectorAll('[data-toggle-category]').forEach(btn=>{
+    btn.onclick=(e)=>{e.preventDefault();const cat=btn.dataset.toggleCategory;collapsedCategories[cat]=!collapsedCategories[cat];localStorage.setItem('oshikatsu_collapsedCategories',JSON.stringify(collapsedCategories));updateItemGrid();};
+  });
   document.getElementById('itemGridArea').querySelectorAll('[data-add-category]').forEach(btn=>{ btn.onclick = (e)=>{ e.stopPropagation(); openItemModal(null, btn.dataset.addCategory==='未分類'?'':btn.dataset.addCategory); }; });
+  const bulkBtn=document.getElementById('bulkMoveModeBtn');
+  if(bulkBtn) bulkBtn.onclick=()=>{bulkMoveMode=!bulkMoveMode;if(!bulkMoveMode)bulkSelectedIds.clear();renderDetail();};
+  const moveBar=document.getElementById('bulkMoveBar');
+  if(moveBar){
+    moveBar.classList.toggle('hidden',!bulkMoveMode);
+    document.getElementById('bulkSelectedCount').textContent=`${bulkSelectedIds.size}件選択`;
+    document.getElementById('bulkMoveCancelBtn').onclick=()=>{bulkMoveMode=false;bulkSelectedIds.clear();renderDetail();};
+    document.getElementById('bulkMoveApplyBtn').onclick=async()=>{
+      const cat=document.getElementById('bulkMoveCategory').value;
+      if(!cat){showToast('移動先カテゴリを選んでね');return;}
+      if(!bulkSelectedIds.size){showToast('移動するグッズを選んでね');return;}
+      if(!confirm(`${bulkSelectedIds.size}件を「${cat}」へ移動する？`))return;
+      let done=0,failed=0;
+      for(const id of Array.from(bulkSelectedIds)){
+        try{await updateDoc(doc(db,'users',uid,'items',id),{category:cat});done++;}
+        catch(e){failed++;}
+      }
+      bulkSelectedIds.clear();bulkMoveMode=false;
+      showToast(`移動完了：${done}件${failed?`（失敗${failed}件）`:""}`);
+      renderDetail();
+    };
+  }
   document.getElementById('scanBtn').onclick = ()=>{
     if(!GEMINI_API_KEY){ showToast('Gemini APIキーが設定されてないよ'); return; }
     document.getElementById('scanFileInput').click();
@@ -1058,6 +1138,22 @@ function openItemModal(id, presetCategory=''){
   const curatedSeries = (typeof IBRAHIM_SERIES_YEAR !== 'undefined') ? Object.keys(IBRAHIM_SERIES_YEAR) : [];
   const allSeries = Array.from(new Set([...usedSeries, ...seriesFromNames, ...curatedSeries])).sort((a,b)=>a.localeCompare(b,'ja'));
   document.getElementById('seriesList').innerHTML = allSeries.map(s=>`<option value="${s.replace(/&/g,'&amp;').replace(/"/g,'&quot;')}">`).join('');
+  const seriesBox=document.getElementById('seriesSuggestBox'),catBox=document.getElementById('catSuggestBox');
+  const showMatches=(input,box,values)=>{
+    const q=input.value.trim().toLocaleLowerCase();
+    if(!q){box.classList.add('hidden');box.innerHTML='';return;}
+    const matches=values.filter(v=>v.toLocaleLowerCase().includes(q)).slice(0,8);
+    if(!matches.length){box.classList.add('hidden');box.innerHTML='';return;}
+    box.innerHTML=matches.map(v=>`<button type="button" class="suggest-chip" data-pick="${v.replace(/&/g,'&amp;').replace(/"/g,'&quot;')}">${v}</button>`).join('');
+    box.classList.remove('hidden');
+    box.querySelectorAll('[data-pick]').forEach(b=>b.onclick=()=>{input.value=b.dataset.pick;box.classList.add('hidden');box.innerHTML='';});
+  };
+  const categoryValues=Array.from(new Set([...CATEGORY_LIST,...state.items.map(i=>String(i.category||'').trim()).filter(Boolean)])).sort((a,b)=>a.localeCompare(b,'ja'));
+  const seriesInput=document.getElementById('itemSeriesInput'),catInput=document.getElementById('itemCatInput');
+  seriesInput.oninput=()=>showMatches(seriesInput,seriesBox,allSeries);
+  seriesInput.onfocus=()=>showMatches(seriesInput,seriesBox,allSeries);
+  catInput.oninput=()=>showMatches(catInput,catBox,categoryValues);
+  catInput.onfocus=()=>showMatches(catInput,catBox,categoryValues);
   document.getElementById('itemDeleteBtn').classList.toggle('hidden', !it);
   const updateSubtotalPreview=()=>{document.getElementById('itemSubtotalPreview').textContent='グッズ別総額：'+fmtYen((Number(document.getElementById('itemPriceInput').value)||0)*(Number(document.getElementById('itemQtyInput').value)||0));};
   document.getElementById('itemPriceInput').oninput=updateSubtotalPreview;
@@ -1193,23 +1289,96 @@ function handleNameAutoExtract(raw){
 document.getElementById('shapeCircleBtn').onclick=()=>{itemImageShape='circle';document.getElementById('shapeCircleBtn').classList.add('active');document.getElementById('shapeSquareBtn').classList.remove('active');};
 document.getElementById('shapeSquareBtn').onclick=()=>{itemImageShape='square';document.getElementById('shapeSquareBtn').classList.add('active');document.getElementById('shapeCircleBtn').classList.remove('active');};
 function openCropEditor(index){
-  const src=itemImgTemp[index];if(!src)return;
-  const img=new Image();img.onload=()=>{cropContext={index,img,x:0,y:0,zoom:1};['cropZoom','cropX','cropY'].forEach((id,i)=>document.getElementById(id).value=[1,0,0][i]);drawCropPreview();openModal('cropOverlay');};img.src=src;
+  const src=itemImgTemp[index]; if(!src)return;
+  const img=new Image();
+  img.onload=()=>{
+    cropContext={index,img,x:0,y:0,zoom:1,frameSize:.9,angle:0,shape:itemImageShape==='circle'?'circle':'square'};
+    syncCropControls(); drawCropPreview(); openModal('cropOverlay');
+  };
+  img.onerror=()=>showToast('画像を読み込めませんでした');
+  img.src=src;
 }
-function drawCropPreview(){
-  if(!cropContext)return;const c=document.getElementById('cropCanvas'),ctx=c.getContext('2d'),{img,x,y,zoom}=cropContext;
-  ctx.clearRect(0,0,c.width,c.height);ctx.fillStyle='#f5f2f8';ctx.fillRect(0,0,c.width,c.height);
-  const scale=Math.max(c.width/img.width,c.height/img.height)*zoom,w=img.width*scale,h=img.height*scale,dx=(c.width-w)/2+x*c.width*.45,dy=(c.height-h)/2+y*c.height*.45;
-  ctx.drawImage(img,dx,dy,w,h);
+function syncCropControls(){
+  if(!cropContext)return;
+  document.getElementById('cropFrameSize').value=cropContext.frameSize;
+  document.getElementById('cropZoom').value=cropContext.zoom;
+  document.getElementById('cropX').value=cropContext.x;
+  document.getElementById('cropY').value=cropContext.y;
+  document.getElementById('cropAngle').value=cropContext.angle;
+  document.getElementById('cropAngleLabel').textContent=`${cropContext.angle}°`;
+  document.getElementById('cropCircleBtn').classList.toggle('active',cropContext.shape==='circle');
+  document.getElementById('cropSquareBtn').classList.toggle('active',cropContext.shape==='square');
 }
-['cropZoom','cropX','cropY'].forEach(id=>document.getElementById(id).addEventListener('input',()=>{if(!cropContext)return;cropContext.zoom=+document.getElementById('cropZoom').value;cropContext.x=+document.getElementById('cropX').value;cropContext.y=+document.getElementById('cropY').value;drawCropPreview();}));
+function drawCropImage(ctx,size,state,output=false){
+  const {img,x,y,zoom,frameSize,angle,shape}=state;
+  const frame=size*frameSize, center=size/2, rad=angle*Math.PI/180;
+  ctx.clearRect(0,0,size,size);
+  ctx.fillStyle=output?'rgba(0,0,0,0)':'#171717';ctx.fillRect(0,0,size,size);
+  // Dim the area outside the selected crop frame.
+  if(!output){ctx.save();ctx.fillStyle='rgba(0,0,0,.48)';ctx.fillRect(0,0,size,size);ctx.restore();}
+  ctx.save();
+  if(shape==='circle'){ctx.beginPath();ctx.arc(center,center,frame/2,0,Math.PI*2);ctx.clip();}
+  else ctx.beginPath(),ctx.rect(center-frame/2,center-frame/2,frame,frame),ctx.clip();
+  ctx.translate(center+x*frame*.48,center+y*frame*.48);
+  ctx.rotate(rad);
+  const c=Math.abs(Math.cos(rad)),s=Math.abs(Math.sin(rad));
+  const rotatedW=img.width*c+img.height*s,rotatedH=img.width*s+img.height*c;
+  const scale=Math.max(frame/rotatedW,frame/rotatedH)*zoom;
+  ctx.drawImage(img,-img.width*scale/2,-img.height*scale/2,img.width*scale,img.height*scale);
+  ctx.restore();
+  if(!output){
+    ctx.save();ctx.strokeStyle='#fff';ctx.lineWidth=2;
+    if(shape==='circle'){ctx.beginPath();ctx.arc(center,center,frame/2,0,Math.PI*2);ctx.stroke();}
+    else{ctx.strokeRect(center-frame/2,center-frame/2,frame,frame);
+      const l=14;ctx.lineWidth=4;
+      [[center-frame/2,center-frame/2,1,1],[center+frame/2,center-frame/2,-1,1],[center-frame/2,center+frame/2,1,-1],[center+frame/2,center+frame/2,-1,-1]].forEach(([px,py,dx,dy])=>{ctx.beginPath();ctx.moveTo(px,py+dy*l);ctx.lineTo(px,py);ctx.lineTo(px+dx*l,py);ctx.stroke();});
+    }
+    ctx.restore();
+  }
+}
+function drawCropPreview(){if(!cropContext)return;const c=document.getElementById('cropCanvas');drawCropImage(c.getContext('2d'),c.width,cropContext,false);}
+['cropFrameSize','cropZoom','cropX','cropY','cropAngle'].forEach(id=>document.getElementById(id).addEventListener('input',()=>{
+  if(!cropContext)return;
+  cropContext.frameSize=Number(document.getElementById('cropFrameSize').value);
+  cropContext.zoom=Number(document.getElementById('cropZoom').value);
+  cropContext.x=Number(document.getElementById('cropX').value);
+  cropContext.y=Number(document.getElementById('cropY').value);
+  cropContext.angle=Number(document.getElementById('cropAngle').value);
+  document.getElementById('cropAngleLabel').textContent=`${cropContext.angle}°`;
+  drawCropPreview();
+}));
 let cropDrag=null;
-document.getElementById('cropCanvas').addEventListener('pointerdown',e=>{if(!cropContext)return;cropDrag={x:e.clientX,y:e.clientY,ox:cropContext.x,oy:cropContext.y};e.currentTarget.setPointerCapture(e.pointerId);});
-document.getElementById('cropCanvas').addEventListener('pointermove',e=>{if(!cropDrag||!cropContext)return;const r=e.currentTarget.getBoundingClientRect();cropContext.x=Math.max(-1,Math.min(1,cropDrag.ox+(e.clientX-cropDrag.x)/r.width*2));cropContext.y=Math.max(-1,Math.min(1,cropDrag.oy+(e.clientY-cropDrag.y)/r.height*2));document.getElementById('cropX').value=cropContext.x;document.getElementById('cropY').value=cropContext.y;drawCropPreview();});
-['pointerup','pointercancel'].forEach(ev=>document.getElementById('cropCanvas').addEventListener(ev,()=>cropDrag=null));
-document.getElementById('cropCancelBtn').onclick=()=>closeModal('cropOverlay');
-document.getElementById('cropApplyBtn').onclick=()=>{if(!cropContext)return;const {img,x,y,zoom,index}=cropContext,c=document.createElement('canvas');c.width=c.height=640;const ctx=c.getContext('2d'),scale=Math.max(640/img.width,640/img.height)*zoom,w=img.width*scale,h=img.height*scale;ctx.drawImage(img,(640-w)/2+x*288,(640-h)/2+y*288,w,h);itemImgTemp[index]=c.toDataURL('image/jpeg',.72);cropContext=null;closeModal('cropOverlay');updateItemImgPick();};
-
+document.getElementById('cropCanvas').addEventListener('pointerdown',e=>{
+  if(!cropContext)return;
+  cropDrag={x:e.clientX,y:e.clientY,ox:cropContext.x,oy:cropContext.y};
+  e.currentTarget.setPointerCapture(e.pointerId);
+});
+document.getElementById('cropCanvas').addEventListener('pointermove',e=>{
+  if(!cropDrag||!cropContext)return;
+  const r=e.currentTarget.getBoundingClientRect();
+  cropContext.x=Math.max(-1,Math.min(1,cropDrag.ox+(e.clientX-cropDrag.x)/r.width*2/cropContext.frameSize));
+  cropContext.y=Math.max(-1,Math.min(1,cropDrag.oy+(e.clientY-cropDrag.y)/r.height*2/cropContext.frameSize));
+  document.getElementById('cropX').value=cropContext.x;document.getElementById('cropY').value=cropContext.y;
+  drawCropPreview();
+});
+['pointerup','pointercancel','lostpointercapture'].forEach(ev=>document.getElementById('cropCanvas').addEventListener(ev,()=>cropDrag=null));
+document.getElementById('cropRotateLeftBtn').onclick=()=>{if(!cropContext)return;cropContext.angle-=90;if(cropContext.angle < -180)cropContext.angle+=360;syncCropControls();drawCropPreview();};
+document.getElementById('cropRotateRightBtn').onclick=()=>{if(!cropContext)return;cropContext.angle+=90;if(cropContext.angle > 180)cropContext.angle-=360;syncCropControls();drawCropPreview();};
+document.getElementById('cropResetBtn').onclick=()=>{if(!cropContext)return;cropContext.x=0;cropContext.y=0;cropContext.zoom=1;cropContext.frameSize=.9;cropContext.angle=0;syncCropControls();drawCropPreview();};
+document.getElementById('cropCircleBtn').onclick=()=>{if(!cropContext)return;cropContext.shape='circle';itemImageShape='circle';syncCropControls();drawCropPreview();};
+document.getElementById('cropSquareBtn').onclick=()=>{if(!cropContext)return;cropContext.shape='square';itemImageShape='square';syncCropControls();drawCropPreview();};
+document.getElementById('cropCancelBtn').onclick=()=>{cropContext=null;closeModal('cropOverlay');};
+document.getElementById('cropApplyBtn').onclick=()=>{
+  if(!cropContext)return;
+  const c=document.createElement('canvas');c.width=c.height=640;
+  const ctx=c.getContext('2d');
+  const state={...cropContext,frameSize:1,x:cropContext.x*cropContext.frameSize,y:cropContext.y*cropContext.frameSize};
+  // Export only the selected frame, filling the output square/circle.
+  drawCropImage(ctx,640,state,true);
+  itemImgTemp[cropContext.index]=c.toDataURL('image/png');
+  itemImageShape=cropContext.shape;
+  cropContext=null;closeModal('cropOverlay');updateItemImgPick();
+};
 function updateItemImgPick(){
   const row = document.getElementById('itemImgRow');
   let html = itemImgTemp.map((src, idx)=>`
