@@ -957,16 +957,6 @@ function updateItemGrid(){
   const gridArea = document.getElementById('itemGridArea');
   if(!gridArea) return;
   gridArea.innerHTML = renderItemGridHtml(list);
-  gridArea.querySelectorAll('[data-edit]').forEach(card=>{card.onclick=(e)=>{
-      if(!bulkMoveMode){openItemModal(card.dataset.edit);return;}
-      e.preventDefault();const id=card.dataset.itemId;
-      if(bulkSelectedIds.has(id))bulkSelectedIds.delete(id);else bulkSelectedIds.add(id);
-      updateItemGrid();const count=document.getElementById('bulkSelectedCount');if(count)count.textContent=`${bulkSelectedIds.size}件選択`;
-    };});
-  gridArea.querySelectorAll('[data-add-category]').forEach(btn=>{ btn.onclick = (e)=>{ e.stopPropagation(); openItemModal(null, btn.dataset.addCategory==='未分類'?'':btn.dataset.addCategory); }; });
-  gridArea.querySelectorAll('[data-toggle-category]').forEach(btn=>{
-    btn.onclick=(e)=>{e.preventDefault();const cat=btn.dataset.toggleCategory;collapsedCategories[cat]=!collapsedCategories[cat];localStorage.setItem('oshikatsu_collapsedCategories',JSON.stringify(collapsedCategories));updateItemGrid();};
-  });
 }
 
 function renderDetail(){
@@ -984,18 +974,11 @@ function renderDetail(){
       <div class="searchrow">
         <input class="searchbox" id="searchInput" placeholder="商品名で検索" value="${filter.q}">
       </div>
-      <div class="filterrow" style="display:flex; gap:8px; min-width:0; align-items:center; justify-content:space-between; flex-wrap:wrap;">
-        <select id="seriesFilterSelect" class="sortselect" aria-label="シリーズ名で絞り込み">
+      <div class="filterrow" style="display:flex; gap:8px; min-width:0; width:100%; align-items:center;">
+        <select id="seriesFilterSelect" class="sortselect" aria-label="シリーズ名で絞り込み" style="display:block; width:100%; min-width:0; flex:1 1 100%;">
           <option value="ALL">すべてのシリーズ</option>
           ${Array.from(new Set(chItems.map(i=>((String(i.name||'').match(/^【([^】]+)】/)||[])[1]||String(i.series||'').trim())).filter(Boolean))).sort((a,b)=>a.localeCompare(b,'ja')).map(s=>`<option value="${s.replace(/&/g,'&amp;').replace(/"/g,'&quot;')}">${s}</option>`).join('')}
         </select>
-        <div style="position:relative; flex:none;">
-          <button class="menubtn" id="gridColsBtn" style="width:38px; height:38px; font-size:15px;" aria-label="表示列数を変更">⊞</button>
-          <div class="gridcols-popup hidden" id="gridColsPopup">
-            <button type="button" data-action="inc" ${gridCols>=6?'disabled':''}>＋ 列を増やす</button>
-            <button type="button" data-action="dec" ${gridCols<=2?'disabled':''}>− 列を減らす</button>
-          </div>
-        </div>
       </div>
     </div>
     <div id="itemGridArea">${renderItemGridHtml(list)}</div>
@@ -1009,34 +992,27 @@ function renderDetail(){
   main.innerHTML = html;
   document.getElementById('searchInput').oninput = (e)=>{ filter.q = e.target.value; updateItemGrid(); };
   const seriesFilterSelect=document.getElementById('seriesFilterSelect');
-  seriesFilterSelect.value=seriesFilter;
-  seriesFilterSelect.onchange=e=>{seriesFilter=e.target.value;updateItemGrid();};
-  document.getElementById('gridColsBtn').onclick = (e)=>{
-    e.stopPropagation();
-    document.getElementById('gridColsPopup').classList.toggle('hidden');
+  if(seriesFilterSelect){
+    seriesFilterSelect.value=seriesFilter;
+    seriesFilterSelect.onchange=e=>{seriesFilter=e.target.value;updateItemGrid();};
+  }
+  const itemGridArea=document.getElementById('itemGridArea');
+  if(itemGridArea) itemGridArea.onclick=(e)=>{
+    const addBtn=e.target.closest('[data-add-category]');
+    if(addBtn){e.preventDefault();e.stopPropagation();openItemModal(null,addBtn.dataset.addCategory==='未分類'?'':addBtn.dataset.addCategory);return;}
+    const toggleBtn=e.target.closest('[data-toggle-category]');
+    if(toggleBtn){e.preventDefault();const cat=toggleBtn.dataset.toggleCategory;collapsedCategories[cat]=!collapsedCategories[cat];localStorage.setItem('oshikatsu_collapsedCategories',JSON.stringify(collapsedCategories));updateItemGrid();return;}
+    const card=e.target.closest('[data-edit]');
+    if(card){
+      e.preventDefault();
+      if(!bulkMoveMode){openItemModal(card.dataset.edit);return;}
+      const id=card.dataset.itemId;
+      if(bulkSelectedIds.has(id))bulkSelectedIds.delete(id);else bulkSelectedIds.add(id);
+      updateItemGrid();
+      const count=document.getElementById('bulkSelectedCount');
+      if(count)count.textContent=`${bulkSelectedIds.size}件選択`;
+    }
   };
-  document.getElementById('gridColsPopup').querySelectorAll('button').forEach(b=>{
-    b.onclick = ()=>{
-      if(b.dataset.action==='inc') gridCols = Math.min(6, gridCols+1);
-      else gridCols = Math.max(2, gridCols-1);
-      localStorage.setItem('oshikatsu_gridCols', gridCols);
-      document.getElementById('gridColsPopup').classList.add('hidden');
-      renderDetail();
-    };
-  });
-  document.getElementById('itemGridArea').querySelectorAll('[data-edit]').forEach(card=>{ card.onclick=(e)=>{
-    if(!bulkMoveMode){openItemModal(card.dataset.edit);return;}
-    e.preventDefault();
-    const id=card.dataset.itemId;
-    if(bulkSelectedIds.has(id))bulkSelectedIds.delete(id);else bulkSelectedIds.add(id);
-    updateItemGrid();
-    const count=document.getElementById('bulkSelectedCount');
-    if(count)count.textContent=`${bulkSelectedIds.size}件選択`;
-  }; });
-  document.getElementById('itemGridArea').querySelectorAll('[data-toggle-category]').forEach(btn=>{
-    btn.onclick=(e)=>{e.preventDefault();const cat=btn.dataset.toggleCategory;collapsedCategories[cat]=!collapsedCategories[cat];localStorage.setItem('oshikatsu_collapsedCategories',JSON.stringify(collapsedCategories));updateItemGrid();};
-  });
-  document.getElementById('itemGridArea').querySelectorAll('[data-add-category]').forEach(btn=>{ btn.onclick = (e)=>{ e.stopPropagation(); openItemModal(null, btn.dataset.addCategory==='未分類'?'':btn.dataset.addCategory); }; });
   const bulkBtn=document.getElementById('bulkMoveModeBtn');
   if(bulkBtn) bulkBtn.onclick=()=>{bulkMoveMode=!bulkMoveMode;if(!bulkMoveMode)bulkSelectedIds.clear();renderDetail();};
   const moveBar=document.getElementById('bulkMoveBar');
