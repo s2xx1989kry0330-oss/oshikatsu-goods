@@ -996,8 +996,8 @@ function renderDetail(){
     seriesFilterSelect.value=seriesFilter;
     seriesFilterSelect.onchange=e=>{seriesFilter=e.target.value;updateItemGrid();};
   }
-  const itemGridArea=document.getElementById('itemGridArea');
-  if(itemGridArea) itemGridArea.onclick=(e)=>{
+  // mainArea persists while its inner content is replaced; delegate taps there.
+  main.onclick=(e)=>{
     const addBtn=e.target.closest('[data-add-category]');
     if(addBtn){e.preventDefault();e.stopPropagation();openItemModal(null,addBtn.dataset.addCategory==='未分類'?'':addBtn.dataset.addCategory);return;}
     const toggleBtn=e.target.closest('[data-toggle-category]');
@@ -1154,14 +1154,7 @@ function openItemModal(id, presetCategory=''){
   const usedCats = Array.from(new Set(state.items.map(i=>i.category).filter(Boolean)));
   const allCats = Array.from(new Set([...CATEGORY_LIST, ...usedCats]));
   document.getElementById('catList').innerHTML = allCats.map(c=>`<option value="${c}">`).join('');
-  const usedSeries = state.items.map(i=>String(i.series||'').trim()).filter(Boolean);
-  const seriesFromNames = state.items.map(i=>{
-    const m = String(i.name||'').match(/^【([^】]+)】/);
-    return m ? m[1].trim() : '';
-  }).filter(Boolean);
-  const curatedSeries = (typeof IBRAHIM_SERIES_YEAR !== 'undefined') ? Object.keys(IBRAHIM_SERIES_YEAR) : [];
-  const allSeries = Array.from(new Set([...usedSeries, ...seriesFromNames, ...curatedSeries])).sort((a,b)=>a.localeCompare(b,'ja'));
-  document.getElementById('seriesList').innerHTML = allSeries.map(s=>`<option value="${s.replace(/&/g,'&amp;').replace(/"/g,'&quot;')}">`).join('');
+  // シリーズ名入力欄は廃止済み。シリーズは商品名の【シリーズ名】から扱う。
   const catBox=document.getElementById('catSuggestBox');
   const showMatches=(input,box,values)=>{
     const q=input.value.trim().toLocaleLowerCase();
@@ -1173,9 +1166,7 @@ function openItemModal(id, presetCategory=''){
     box.querySelectorAll('[data-pick]').forEach(b=>b.onclick=()=>{input.value=b.dataset.pick;box.classList.add('hidden');box.innerHTML='';});
   };
   const categoryValues=Array.from(new Set([...CATEGORY_LIST,...state.items.map(i=>String(i.category||'').trim()).filter(Boolean)])).sort((a,b)=>a.localeCompare(b,'ja'));
-  const seriesSuggestInput=document.getElementById('itemSeriesInput'),catSuggestInput=document.getElementById('itemCatInput');
-  seriesSuggestInput.oninput=()=>showMatches(seriesSuggestInput,seriesBox,allSeries);
-  seriesSuggestInput.onfocus=()=>showMatches(seriesSuggestInput,seriesBox,allSeries);
+  const catSuggestInput=document.getElementById('itemCatInput');
   catSuggestInput.oninput=()=>showMatches(catSuggestInput,catBox,categoryValues);
   catSuggestInput.onfocus=()=>showMatches(catSuggestInput,catBox,categoryValues);
   document.getElementById('itemDeleteBtn').classList.toggle('hidden', !it);
