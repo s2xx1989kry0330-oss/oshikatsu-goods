@@ -311,7 +311,7 @@
     </div>
     <div class="field">
       <label>商品名</label>
-      <input type="text" id="itemNameInput" placeholder="例）【VSせめよん】ランダム缶バッジ">
+      <textarea id="itemNameInput" rows="3" placeholder="例）【VSせめよん】ランダム缶バッジ" style="min-height:88px; line-height:1.45; overflow-y:hidden; overflow-wrap:anywhere;"></textarea>
       <button type="button" class="searchsitebtn hidden" id="searchSiteBtn">🔍 公式サイト内で調べる</button>
       <div class="suggestrow hidden" id="nameSuggestRow"></div>
     </div>
@@ -1201,6 +1201,7 @@ function openItemModal(id, presetCategory=''){
     closeModal('itemOverlay');
     openItemModal(null, source.category||'');
     document.getElementById('itemNameInput').value=displayItemName(source);
+    document.getElementById('itemNameInput').dispatchEvent(new Event('input', {bubbles:true}));
     document.getElementById('itemCatInput').value=source.category||'';
     document.getElementById('itemPriceInput').value=source.price??0;
     document.getElementById('itemQtyInput').value=source.qty??1;
@@ -1236,8 +1237,15 @@ function openItemModal(id, presetCategory=''){
   }
 
   const nameInput = document.getElementById('itemNameInput');
+  const resizeNameInput = ()=>{
+    nameInput.style.height = 'auto';
+    nameInput.style.height = Math.min(Math.max(nameInput.scrollHeight, 88), 180) + 'px';
+    nameInput.style.overflowY = nameInput.scrollHeight > 180 ? 'auto' : 'hidden';
+  };
+  nameInput.oninput = resizeNameInput;
+  resizeNameInput();
   nameInput.onpaste = ()=>{
-    setTimeout(()=>{ handleNameAutoExtract(nameInput.value); }, 0);
+    setTimeout(()=>{ handleNameAutoExtract(nameInput.value); resizeNameInput(); }, 0);
   };
 
   async function writeChangeHistory(action,itemId,beforeData,afterData){
