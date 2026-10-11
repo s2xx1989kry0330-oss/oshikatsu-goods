@@ -399,7 +399,7 @@
       <label>グッズ一覧の並び替え</label>
       <div style="display:flex;gap:8px;align-items:center;">
         <select id="settingsSortMode" class="sortselect" style="flex:1;">
-          <option value="registered">登録順</option><option value="qty">数量順</option><option value="name">名前順</option><option value="price">単価順</option><option value="total">グッズ別総額順</option><option value="year">発売年順</option>
+          <option value="qty-name">個数降順 ＞ 商品名昇順</option><option value="registered">登録順</option><option value="qty">数量順</option><option value="name">名前順</option><option value="price">単価順</option><option value="total">グッズ別総額順</option><option value="year">発売年順</option>
         </select>
         <button type="button" id="settingsSortDirection" class="sortselect">↓ 降順</button>
       </div>
@@ -589,7 +589,7 @@ if(gridCols < 3 || gridCols > 6){
   gridCols = 4;
   localStorage.setItem('oshikatsu_gridCols', String(gridCols));
 }
-let sortMode = localStorage.getItem('oshikatsu_sortMode') || 'qty';
+let sortMode = localStorage.getItem('oshikatsu_sortMode') || 'qty-name';
 let sortDirection = localStorage.getItem('oshikatsu_sortDirection') || 'desc';
 let seriesFilter = 'ALL';
 let unclassifiedOnly = localStorage.getItem('oshikatsu_unclassifiedOnly')==='true';
@@ -901,6 +901,11 @@ function getFilteredSortedItems(chItems){
     registered:Number(i.createdAt?.seconds||i.createdAt||0)
   });
   list = list.slice().sort((a,b)=>{
+    if(sortMode==='qty-name'){
+      // Primary: quantity descending. Secondary: product name ascending.
+      const qtyCmp=Number(b.qty||0)-Number(a.qty||0);
+      return qtyCmp || cmpName(a,b);
+    }
     const av=valueFor(a)[sortMode]??0, bv=valueFor(b)[sortMode]??0;
     let cmp=typeof av==='string'?av.localeCompare(bv,'ja'):av-bv;
     if(sortDirection==='desc')cmp=-cmp;
@@ -1265,27 +1270,32 @@ document.getElementById('itemSaveBtn').onclick = async ()=>{
 
 /* ---------------- Name auto-extract (series / category / price) ---------------- */
 function parseItemNameInput(raw){
-  let name = raw;
+  // Pasteした商品名は原文のまま維持し、先頭の【シリーズ名】だけを認識する。
+  // シリーズ名を商品名から取り除かない（表示・保存とも「【シリーズ名】商品名」の形を維持）。
+  let name = String(raw ?? '');
   let seriesGuess = null, priceGuess = null, categoryGuess = null;
 
-  const seriesMatch = name.match(/【([^】]+)】/);
-  if(seriesMatch){ seriesGuess = seriesMatch[1]; name = name.replace(seriesMatch[0], '').trim(); }
+  const seriesMatch = name.match(/^\s*【([^】]+)】/);
+  if(seriesMatch) seriesGuess = seriesMatch[1].trim();
 
+  // 価格だけは従来どおり価格欄へ抽出。シリーズ表記は変更しない。
   const priceMatch = name.match(/¥\s?([\d,]+)|([\d,]+)\s?円/);
   if(priceMatch){
     const numRaw = (priceMatch[1]||priceMatch[2]).replace(/,/g,'');
     priceGuess = Number(numRaw);
-    name = name.replace(priceMatch[0], '').replace(/税込/g,'').trim();
+    name = name.replace(priceMatch[0], '').replace(/税込/g,'').replace(/\s+/g,' ').trim();
   }
-  name = name.replace(/\s+/g,' ').trim();
-  const matches = CATEGORY_LIST.filter(c => name.includes(c));
+  const categorySource = name;
+  const matches = CATEGORY_LIST.filter(c => categorySource.includes(c));
   categoryGuess = matches.length ? matches.sort((a,b)=>b.length-a.length)[0] : null;
 
   return { name, seriesGuess, priceGuess, categoryGuess };
 }
 function handleNameAutoExtract(raw){
   const { name, seriesGuess, priceGuess, categoryGuess } = parseItemNameInput(raw);
-  document.getElementById('itemNameInput').value = name;
+  const nameInput=document.getElementById('itemNameInput');
+  // Bracketed series detection must not strip or rewrite the pasted product name.
+  if(priceGuess !== null) nameInput.value = name;
   if(priceGuess !== null){
     document.getElementById('itemPriceInput').value = priceGuess;
   }
@@ -1294,10 +1304,9 @@ function handleNameAutoExtract(raw){
   let hasSuggestion = false;
   if(seriesGuess){
     hasSuggestion = true;
-    const chip = document.createElement('button');
-    chip.type = 'button'; chip.className = 'suggest-chip';
-    chip.textContent = `シリーズ: ${seriesGuess} ✓`;
-    chip.onclick = ()=>{ document.getElementById('itemSeriesInput').value = seriesGuess; chip.remove(); };
+    const chip = document.createElement('span');
+    chip.className = 'suggest-chip';
+    chip.textContent = `シリーズ認識: 【${seriesGuess}】`;
     row.appendChild(chip);
   }
   if(categoryGuess){
