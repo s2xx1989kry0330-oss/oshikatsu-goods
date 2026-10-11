@@ -343,6 +343,9 @@
       <label>メモ（任意）</label>
       <textarea id="itemMemoInput" placeholder="状態やその他メモ"></textarea>
     </div>
+    <div class="sheet-actions" id="itemCopyRow" style="margin-bottom:8px;">
+      <button type="button" class="btn ghost" id="itemCopyBtn">このグッズをコピーして追加</button>
+    </div>
     <div class="sheet-actions">
       <button class="btn ghost" id="itemCancelBtn">キャンセル</button>
       <button class="btn primary" id="itemSaveBtn">保存する</button>
@@ -916,7 +919,7 @@ function getFilteredSortedItems(chItems){
 function displayItemName(i){
   const name = String(i.name||'').trim();
   const series = String(i.series||'').trim();
-  if(!series || /^【[^】]+】/.test(name)) return name;
+  if(!series || /^【[^】]+】/.test(name)) return name || '名称未設定';
   return `【${series}】${name}`;
 }
 function normalizeSeriesIntoName(item){
@@ -1190,6 +1193,27 @@ function openItemModal(id, presetCategory=''){
   catSuggestInput.oninput=()=>showMatches(catSuggestInput,catBox,categoryValues);
   catSuggestInput.onfocus=()=>showMatches(catSuggestInput,catBox,categoryValues);
   document.getElementById('itemDeleteBtn').classList.toggle('hidden', !it);
+  const itemCopyRow=document.getElementById('itemCopyRow');
+  itemCopyRow.classList.toggle('hidden', !it);
+  document.getElementById('itemCopyBtn').onclick=()=>{
+    if(!it) return;
+    const source={...it, images:getItemImages(it).slice(), imageShape:itemImageShape};
+    closeModal('itemOverlay');
+    openItemModal(null, source.category||'');
+    document.getElementById('itemNameInput').value=displayItemName(source);
+    document.getElementById('itemCatInput').value=source.category||'';
+    document.getElementById('itemPriceInput').value=source.price??0;
+    document.getElementById('itemQtyInput').value=source.qty??1;
+    document.getElementById('itemYearInput').value=source.releaseYear||'';
+    document.getElementById('itemMemoInput').value=source.memo||'';
+    itemImgTemp=source.images.slice();
+    itemImageShape=source.imageShape||'square';
+    document.getElementById('shapeCircleBtn').classList.toggle('active',itemImageShape==='circle');
+    document.getElementById('shapeSquareBtn').classList.toggle('active',itemImageShape==='square');
+    updateItemImgPick();
+    document.getElementById('itemSubtotalPreview').textContent='グッズ別総額：'+fmtYen((Number(source.price)||0)*(Number(source.qty)||0));
+    showToast('コピーを作成したよ。商品名や柄などを変更して保存してね');
+  };
   const updateSubtotalPreview=()=>{document.getElementById('itemSubtotalPreview').textContent='グッズ別総額：'+fmtYen((Number(document.getElementById('itemPriceInput').value)||0)*(Number(document.getElementById('itemQtyInput').value)||0));};
   document.getElementById('itemPriceInput').oninput=updateSubtotalPreview;
   document.getElementById('itemQtyInput').oninput=updateSubtotalPreview;
@@ -1229,7 +1253,6 @@ function openItemModal(id, presetCategory=''){
 }
 document.getElementById('itemSaveBtn').onclick = async ()=>{
     let name = document.getElementById('itemNameInput').value.trim();
-    if(!name){ showToast('商品名を入力してね'); return; }
     const seriesMatch = name.match(/^【([^】]+)】\s*/);
     if(it && !seriesMatch && String(it.series||'').trim()) name=`【${String(it.series).trim()}】${name}`;
     const series = '';
