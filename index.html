@@ -107,7 +107,7 @@
     .sortselect{forced-color-adjust:none; background-color:var(--card) !important; color:var(--ink) !important; border:1px solid var(--line) !important;}
   }
 
-  .item-grid{display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:16px 10px; margin-top:4px;}
+  .item-grid{display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:13px 8px; margin-top:4px;}
   .category-section{border-bottom:1px solid var(--line);padding-bottom:16px;margin:16px 0 20px;}
   .category-head{display:flex;align-items:center;justify-content:space-between;gap:8px;min-height:38px;}
   .category-head-main{display:flex;align-items:center;gap:9px;min-width:0;flex:1;border:0;background:none;padding:4px 0;text-align:left;color:var(--ink);}
@@ -119,7 +119,7 @@
   .item-tile-img img{width:100%;height:100%;object-fit:cover;}
   .item-tile-img.circle img{border-radius:50%;}
   .item-tile-img.square img{border-radius:2px;}
-  .item-tile-qty{position:absolute;right:-2px;top:-5px;z-index:2;min-width:36px;height:28px;padding:0 7px;border-radius:999px;background:var(--pink);color:#fff;font-size:14px;font-weight:800;display:flex;align-items:center;justify-content:center;box-shadow:0 2px 5px #0002;}
+  .item-tile-qty{position:absolute;right:-1px;top:-3px;z-index:2;min-width:29px;height:23px;padding:0 5px;border-radius:999px;background:var(--pink);color:#fff;font-size:12px;font-weight:800;display:flex;align-items:center;justify-content:center;box-shadow:0 2px 5px #0002;}
   .item-tile-name{margin-top:8px;font-size:11.5px;line-height:1.35;font-weight:650;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;overflow-wrap:anywhere;}
   .sort-menu-popup button{display:flex;align-items:center;justify-content:space-between;width:100%;border:0;background:transparent;color:var(--ink);padding:10px;border-radius:10px;text-align:left;font-size:14px;}
   .sort-menu-popup button.active{background:var(--surface-soft,var(--line));font-weight:700;}
@@ -156,7 +156,7 @@
   .bulk-move-bar button{padding:9px 10px;border:0;border-radius:10px;background:var(--accent);color:white;font-weight:800;}
   .bulk-move-bar .bulk-cancel{background:var(--line);color:var(--ink);}
 
-  @media(max-width:390px){.item-grid{gap:14px 8px}.item-tile-name{font-size:10.5px}.item-tile-qty{height:25px;min-width:31px;font-size:12px;}}
+  @media(max-width:390px){.item-grid{gap:12px 7px}.item-tile-name{font-size:10px}.item-tile-qty{height:21px;min-width:27px;font-size:11px;padding:0 4px;}}
 
   .item-card{background:var(--card); border-radius:var(--radius); box-shadow:var(--shadow); overflow:hidden; border:1px solid var(--line); display:flex; flex-direction:column; text-align:left; position:relative; cursor:pointer; transition:transform .1s ease;}
   .item-img{width:100%; aspect-ratio:1/1; background:var(--pink-soft); display:flex; align-items:center; justify-content:center; overflow:hidden; font-size:28px; position:relative;}
@@ -359,16 +359,17 @@
   </div>
   <div class="crop-mode-row">
     <button type="button" id="cropModeButton" class="active">切り抜き</button>
-    <span>画像をドラッグして位置を調整</span>
+    <span>画像をドラッグして位置を調整。横幅・高さは下で変更</span>
     <button type="button" id="cropResetBtn">最初から</button>
   </div>
-  <div class="crop-preview-wrap crop-stage"><canvas id="cropCanvas" width="600" height="600"></canvas></div>
+  <div class="crop-preview-wrap crop-stage"><canvas id="cropCanvas" width="400" height="400"></canvas></div>
   <div class="crop-rotate-button-row">
     <button type="button" id="cropRotateLeftBtn" aria-label="左に90度回転">↶ 90°</button>
     <button type="button" id="cropRotateRightBtn" aria-label="右に90度回転">↷ 90°</button>
   </div>
   <div class="crop-controls">
-    <label>切り抜き枠の大きさ <input type="range" id="cropFrameSize" min="0.45" max="1" step="0.01" value="0.9"></label>
+    <label>切り抜き枠の横幅 <input type="range" id="cropFrameWidth" min="0.25" max="1" step="0.01" value="0.9"></label>
+    <label>切り抜き枠の高さ <input type="range" id="cropFrameHeight" min="0.25" max="1" step="0.01" value="0.9"></label>
     <label>拡大・縮小 <input type="range" id="cropZoom" min="1" max="4" step="0.01" value="1"></label>
     <label>左右の位置 <input type="range" id="cropX" min="-1" max="1" step="0.01" value="0"></label>
     <label>上下の位置 <input type="range" id="cropY" min="-1" max="1" step="0.01" value="0"></label>
@@ -384,6 +385,16 @@
 <div class="overlay" id="backupOverlay">
   <div class="sheet">
     <h2>設定</h2>
+    <div class="field" style="margin-top:12px;">
+      <label for="settingsGridCols">グッズ一覧の列数</label>
+      <select id="settingsGridCols" class="sortselect" style="width:100%;">
+        <option value="3">3列</option>
+        <option value="4">4列（基本）</option>
+        <option value="5">5列</option>
+        <option value="6">6列</option>
+      </select>
+      <p style="font-size:12px;color:var(--ink-soft);margin:6px 0 0;">一覧の表示数をここから変更できます。初期設定は4列です。</p>
+    </div>
     <div class="field" style="margin-top:12px;">
       <label>グッズ一覧の並び替え</label>
       <div style="display:flex;gap:8px;align-items:center;">
@@ -573,7 +584,11 @@ function guessReleaseYear(seriesText){
 let state = { characters: [], items: [] };
 let view = { screen:'home', characterId:null };
 let filter = { q:'', category:'ALL', series:'ALL' };
-let gridCols = Number(localStorage.getItem('oshikatsu_gridCols')) || 2;
+let gridCols = Number(localStorage.getItem('oshikatsu_gridCols')) || 4;
+if(gridCols < 3 || gridCols > 6){
+  gridCols = 4;
+  localStorage.setItem('oshikatsu_gridCols', String(gridCols));
+}
 let sortMode = localStorage.getItem('oshikatsu_sortMode') || 'qty';
 let sortDirection = localStorage.getItem('oshikatsu_sortDirection') || 'desc';
 let seriesFilter = 'ALL';
@@ -1303,7 +1318,13 @@ function openCropEditor(index){
   const src=itemImgTemp[index]; if(!src)return;
   const img=new Image();
   img.onload=()=>{
-    cropContext={index,img,x:0,y:0,zoom:1,frameSize:.9,angle:0,shape:itemImageShape==='circle'?'circle':'square'};
+    cropContext={index,img,x:0,y:0,zoom:1,frameWidth:.9,frameHeight:.9,angle:0,shape:itemImageShape==='circle'?'circle':'square'};
+    // Default rectangular crop follows the source image's aspect ratio, within practical bounds.
+    if(cropContext.shape!=='circle'){
+      const ratio=img.width/Math.max(1,img.height);
+      if(ratio>1) cropContext.frameHeight=Math.max(.3,Math.min(.9,.9/ratio));
+      else cropContext.frameWidth=Math.max(.3,Math.min(.9,.9*ratio));
+    }
     syncCropControls(); drawCropPreview(); openModal('cropOverlay');
   };
   img.onerror=()=>showToast('画像を読み込めませんでした');
@@ -1311,7 +1332,8 @@ function openCropEditor(index){
 }
 function syncCropControls(){
   if(!cropContext)return;
-  document.getElementById('cropFrameSize').value=cropContext.frameSize;
+  document.getElementById('cropFrameWidth').value=cropContext.frameWidth;
+  document.getElementById('cropFrameHeight').value=cropContext.frameHeight;
   document.getElementById('cropZoom').value=cropContext.zoom;
   document.getElementById('cropX').value=cropContext.x;
   document.getElementById('cropY').value=cropContext.y;
@@ -1319,44 +1341,67 @@ function syncCropControls(){
   document.getElementById('cropAngleLabel').textContent=`${cropContext.angle}°`;
   document.getElementById('cropCircleBtn').classList.toggle('active',cropContext.shape==='circle');
   document.getElementById('cropSquareBtn').classList.toggle('active',cropContext.shape==='square');
+  const widthControl=document.getElementById('cropFrameWidth');
+  const heightControl=document.getElementById('cropFrameHeight');
+  if(cropContext.shape==='circle'){
+    cropContext.frameHeight=cropContext.frameWidth;
+    widthControl.value=heightControl.value=cropContext.frameWidth;
+    heightControl.disabled=true;
+  }else heightControl.disabled=false;
 }
-function drawCropImage(ctx,size,state,output=false){
-  const {img,x,y,zoom,frameSize,angle,shape}=state;
-  const frame=size*frameSize, center=size/2, rad=angle*Math.PI/180;
-  ctx.clearRect(0,0,size,size);
-  ctx.fillStyle=output?'rgba(0,0,0,0)':'#171717';ctx.fillRect(0,0,size,size);
-  // Dim the area outside the selected crop frame.
-  if(!output){ctx.save();ctx.fillStyle='rgba(0,0,0,.48)';ctx.fillRect(0,0,size,size);ctx.restore();}
+function drawCropImage(ctx,width,height,state,output=false){
+  const {img,x,y,zoom,frameWidth,frameHeight,angle,shape}=state;
+  const fw=width*frameWidth, fh=height*frameHeight, cx=width/2, cy=height/2, rad=angle*Math.PI/180;
+  ctx.clearRect(0,0,width,height);
+  ctx.fillStyle=output?'#fff':'#171717';ctx.fillRect(0,0,width,height);
+  if(!output){ctx.save();ctx.fillStyle='rgba(0,0,0,.48)';ctx.fillRect(0,0,width,height);ctx.restore();}
   ctx.save();
-  if(shape==='circle'){ctx.beginPath();ctx.arc(center,center,frame/2,0,Math.PI*2);ctx.clip();}
-  else ctx.beginPath(),ctx.rect(center-frame/2,center-frame/2,frame,frame),ctx.clip();
-  ctx.translate(center+x*frame*.48,center+y*frame*.48);
+  if(shape==='circle'){ctx.beginPath();ctx.arc(cx,cy,Math.min(fw,fh)/2,0,Math.PI*2);ctx.clip();}
+  else{ctx.beginPath();ctx.rect(cx-fw/2,cy-fh/2,fw,fh);ctx.clip();}
+  ctx.translate(cx+x*fw*.48,cy+y*fh*.48);
   ctx.rotate(rad);
-  const c=Math.abs(Math.cos(rad)),s=Math.abs(Math.sin(rad));
-  const rotatedW=img.width*c+img.height*s,rotatedH=img.width*s+img.height*c;
-  const scale=Math.max(frame/rotatedW,frame/rotatedH)*zoom;
+  const c=Math.abs(Math.cos(rad)),sn=Math.abs(Math.sin(rad));
+  const rotatedW=img.width*c+img.height*sn,rotatedH=img.width*sn+img.height*c;
+  const scale=Math.max(fw/rotatedW,fh/rotatedH)*zoom;
   ctx.drawImage(img,-img.width*scale/2,-img.height*scale/2,img.width*scale,img.height*scale);
   ctx.restore();
   if(!output){
     ctx.save();ctx.strokeStyle='#fff';ctx.lineWidth=2;
-    if(shape==='circle'){ctx.beginPath();ctx.arc(center,center,frame/2,0,Math.PI*2);ctx.stroke();}
-    else{ctx.strokeRect(center-frame/2,center-frame/2,frame,frame);
-      const l=14;ctx.lineWidth=4;
-      [[center-frame/2,center-frame/2,1,1],[center+frame/2,center-frame/2,-1,1],[center-frame/2,center+frame/2,1,-1],[center+frame/2,center+frame/2,-1,-1]].forEach(([px,py,dx,dy])=>{ctx.beginPath();ctx.moveTo(px,py+dy*l);ctx.lineTo(px,py);ctx.lineTo(px+dx*l,py);ctx.stroke();});
+    if(shape==='circle'){ctx.beginPath();ctx.arc(cx,cy,Math.min(fw,fh)/2,0,Math.PI*2);ctx.stroke();}
+    else{
+      ctx.strokeRect(cx-fw/2,cy-fh/2,fw,fh);
+      const l=12;
+      [[cx-fw/2,cy-fh/2,1,1],[cx+fw/2,cy-fh/2,-1,1],[cx-fw/2,cy+fh/2,1,-1],[cx+fw/2,cy+fh/2,-1,-1]].forEach(([px,py,dx,dy])=>{ctx.beginPath();ctx.moveTo(px,py+dy*l);ctx.lineTo(px,py);ctx.lineTo(px+dx*l,py);ctx.stroke();});
     }
     ctx.restore();
   }
 }
-function drawCropPreview(){if(!cropContext)return;const c=document.getElementById('cropCanvas');drawCropImage(c.getContext('2d'),c.width,cropContext,false);}
-['cropFrameSize','cropZoom','cropX','cropY','cropAngle'].forEach(id=>document.getElementById(id).addEventListener('input',()=>{
+let cropDrawPending=false;
+function scheduleCropPreview(){
+  if(cropDrawPending)return;
+  cropDrawPending=true;
+  requestAnimationFrame(()=>{cropDrawPending=false;drawCropPreview();});
+}
+function drawCropPreview(){
   if(!cropContext)return;
-  cropContext.frameSize=Number(document.getElementById('cropFrameSize').value);
+  const c=document.getElementById('cropCanvas');
+  drawCropImage(c.getContext('2d'),c.width,c.height,cropContext,false);
+}
+['cropFrameWidth','cropFrameHeight','cropZoom','cropX','cropY','cropAngle'].forEach(id=>document.getElementById(id).addEventListener('input',()=>{
+  if(!cropContext)return;
+  cropContext.frameWidth=Number(document.getElementById('cropFrameWidth').value);
+  cropContext.frameHeight=Number(document.getElementById('cropFrameHeight').value);
+  if(cropContext.shape==='circle'){
+    const v=Math.min(cropContext.frameWidth,cropContext.frameHeight);
+    cropContext.frameWidth=cropContext.frameHeight=v;
+    document.getElementById('cropFrameWidth').value=document.getElementById('cropFrameHeight').value=v;
+  }
   cropContext.zoom=Number(document.getElementById('cropZoom').value);
   cropContext.x=Number(document.getElementById('cropX').value);
   cropContext.y=Number(document.getElementById('cropY').value);
   cropContext.angle=Number(document.getElementById('cropAngle').value);
   document.getElementById('cropAngleLabel').textContent=`${cropContext.angle}°`;
-  drawCropPreview();
+  scheduleCropPreview();
 }));
 let cropDrag=null;
 document.getElementById('cropCanvas').addEventListener('pointerdown',e=>{
@@ -1367,27 +1412,28 @@ document.getElementById('cropCanvas').addEventListener('pointerdown',e=>{
 document.getElementById('cropCanvas').addEventListener('pointermove',e=>{
   if(!cropDrag||!cropContext)return;
   const r=e.currentTarget.getBoundingClientRect();
-  cropContext.x=Math.max(-1,Math.min(1,cropDrag.ox+(e.clientX-cropDrag.x)/r.width*2/cropContext.frameSize));
-  cropContext.y=Math.max(-1,Math.min(1,cropDrag.oy+(e.clientY-cropDrag.y)/r.height*2/cropContext.frameSize));
+  cropContext.x=Math.max(-1,Math.min(1,cropDrag.ox+(e.clientX-cropDrag.x)/r.width*2/cropContext.frameWidth));
+  cropContext.y=Math.max(-1,Math.min(1,cropDrag.oy+(e.clientY-cropDrag.y)/r.height*2/cropContext.frameHeight));
   document.getElementById('cropX').value=cropContext.x;document.getElementById('cropY').value=cropContext.y;
-  drawCropPreview();
+  scheduleCropPreview();
 });
 ['pointerup','pointercancel','lostpointercapture'].forEach(ev=>document.getElementById('cropCanvas').addEventListener(ev,()=>cropDrag=null));
 document.getElementById('cropRotateLeftBtn').onclick=()=>{if(!cropContext)return;cropContext.angle-=90;if(cropContext.angle < -180)cropContext.angle+=360;syncCropControls();drawCropPreview();};
 document.getElementById('cropRotateRightBtn').onclick=()=>{if(!cropContext)return;cropContext.angle+=90;if(cropContext.angle > 180)cropContext.angle-=360;syncCropControls();drawCropPreview();};
-document.getElementById('cropResetBtn').onclick=()=>{if(!cropContext)return;cropContext.x=0;cropContext.y=0;cropContext.zoom=1;cropContext.frameSize=.9;cropContext.angle=0;syncCropControls();drawCropPreview();};
-document.getElementById('cropCircleBtn').onclick=()=>{if(!cropContext)return;cropContext.shape='circle';itemImageShape='circle';syncCropControls();drawCropPreview();};
+document.getElementById('cropResetBtn').onclick=()=>{if(!cropContext)return;cropContext.x=0;cropContext.y=0;cropContext.zoom=1;cropContext.frameWidth=.9;cropContext.frameHeight=.9;cropContext.angle=0;syncCropControls();drawCropPreview();};
+document.getElementById('cropCircleBtn').onclick=()=>{if(!cropContext)return;cropContext.shape='circle';itemImageShape='circle';cropContext.frameHeight=cropContext.frameWidth;syncCropControls();drawCropPreview();};
 document.getElementById('cropSquareBtn').onclick=()=>{if(!cropContext)return;cropContext.shape='square';itemImageShape='square';syncCropControls();drawCropPreview();};
 document.getElementById('cropCancelBtn').onclick=()=>{cropContext=null;closeModal('cropOverlay');};
 document.getElementById('cropApplyBtn').onclick=()=>{
   if(!cropContext)return;
-  const c=document.createElement('canvas');c.width=c.height=480;
+  const ratio=cropContext.shape==='circle'?1:(cropContext.frameWidth/Math.max(.01,cropContext.frameHeight));
+  const outW=480,outH=Math.max(120,Math.min(960,Math.round(outW/ratio)));
+  const c=document.createElement('canvas');c.width=outW;c.height=outH;
   const ctx=c.getContext('2d');
-  const state={...cropContext,frameSize:1,x:cropContext.x*cropContext.frameSize,y:cropContext.y*cropContext.frameSize};
-  // Use a white base and compressed JPEG: the UI clips circle-shaped thumbnails to a circle.
+  const state={...cropContext,frameWidth:1,frameHeight:1,x:cropContext.x*cropContext.frameWidth,y:cropContext.y*cropContext.frameHeight};
   ctx.fillStyle='#fff';ctx.fillRect(0,0,c.width,c.height);
-  drawCropImage(ctx,480,state,true);
-  itemImgTemp[cropContext.index]=c.toDataURL('image/jpeg',0.68);
+  drawCropImage(ctx,outW,outH,state,true);
+  itemImgTemp[cropContext.index]=c.toDataURL('image/jpeg',0.66);
   itemImageShape=cropContext.shape;
   cropContext=null;closeModal('cropOverlay');updateItemImgPick();
 };
@@ -1686,6 +1732,22 @@ document.getElementById('categoryTotalsBtn').onclick=()=>{
   openModal('categoryTotalsOverlay');
 };
 document.getElementById('categoryTotalsCloseBtn').onclick=()=>closeModal('categoryTotalsOverlay');
+function syncSettingsGridCols(){
+ const el=document.getElementById('settingsGridCols');
+ if(el) el.value=String(gridCols);
+}
+const settingsGridColsEl=document.getElementById('settingsGridCols');
+if(settingsGridColsEl){
+  settingsGridColsEl.value=String(gridCols);
+  settingsGridColsEl.onchange=()=>{
+    const value=Number(settingsGridColsEl.value);
+    if(!Number.isInteger(value)||value<3||value>6)return;
+    gridCols=value;
+    localStorage.setItem('oshikatsu_gridCols',String(gridCols));
+    if(document.getElementById('itemGridArea')) updateItemGrid();
+    showToast(`グッズ一覧を${gridCols}列に変更したよ`);
+  };
+}
 function syncSettingsSortControls(){
  const sm=document.getElementById('settingsSortMode'),sd=document.getElementById('settingsSortDirection');
  if(!sm||!sd)return;sm.value=sortMode;sd.textContent=sortDirection==='asc'?'↑ 昇順':'↓ 降順';
@@ -1707,11 +1769,6 @@ document.getElementById('categoryOrderSettingsBtn').onclick=()=>{renderCategoryO
 document.getElementById('categoryOrderCloseBtn').onclick=()=>closeModal('categoryOrderOverlay');
 
 document.getElementById('historyCloseBtn').onclick = ()=>closeModal('historyOverlay');
-document.addEventListener('click', ()=>{
-  const p = document.getElementById('gridColsPopup');
-  if(p) p.classList.add('hidden');
-});
-
 document.getElementById('backupCloseBtn').onclick = ()=>closeModal('backupOverlay');
 
 /* ---------------- Manual JSON export (extra safety net) ---------------- */
