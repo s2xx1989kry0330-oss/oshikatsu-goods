@@ -409,14 +409,17 @@
       登録したグッズを新しい順に一覧で見れるよ。タップすると編集画面が開く。
     </p>
     <div class="backupbar">
-      <button class="backupbtn" id="exportBtn">⬇️ 念のためJSONで書き出す</button>
+      <button class="backupbtn" id="exportBtn">☁️ iCloud Driveにバックアップ</button>
     </div>
     <div class="backupbar">
       <button class="backupbtn" id="importBtn">⬆️ JSONバックアップを取り込む</button>
       <input type="file" id="importFileInput" accept=".json,application/json">
     </div>
     <p style="font-size:11.5px; color:var(--ink-soft); line-height:1.5;">
-      JSONバックアップのキャラ・グッズをこのiPhone内に取り込むよ。同じIDのデータは更新されるため、先に念のため書き出してね。
+      バックアップボタンを押すと共有画面が開くよ。「ファイルに保存」→「iCloud Drive」を選んで保存してね。自動同期ではなく、必要なときに手動で保存する方式だよ。
+    </p>
+    <p style="font-size:11.5px; color:var(--ink-soft); line-height:1.5;">
+      JSONバックアップのキャラ・グッズをこのiPhone内に取り込むよ。同じIDのデータは更新されるため、復元前に現在のデータもバックアップしてね。
     </p>
     <div class="backupbar">
       <button class="backupbtn" id="migrateSeriesBtn">🪄 シリーズ名を商品名へ一括変換</button>
@@ -1793,17 +1796,43 @@ document.getElementById('categoryOrderCloseBtn').onclick=()=>closeModal('categor
 document.getElementById('historyCloseBtn').onclick = ()=>closeModal('historyOverlay');
 document.getElementById('backupCloseBtn').onclick = ()=>closeModal('backupOverlay');
 
-/* ---------------- Manual JSON export (extra safety net) ---------------- */
-document.getElementById('exportBtn').onclick = ()=>{
-  const blob = new Blob([JSON.stringify(state, null, 2)], {type:'application/json'});
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  const d = new Date();
-  const stamp = `${d.getFullYear()}${String(d.getMonth()+1).padStart(2,'0')}${String(d.getDate()).padStart(2,'0')}`;
-  a.href = url; a.download = `oshikatsu_backup_${stamp}.json`;
-  document.body.appendChild(a); a.click(); document.body.removeChild(a);
-  URL.revokeObjectURL(url);
-  showToast('書き出したよ');
+/* ---------------- Manual backup to iCloud Drive via iOS share sheet ---------------- */
+document.getElementById('exportBtn').onclick = async ()=>{
+  const btn = document.getElementById('exportBtn');
+  const originalLabel = btn.textContent;
+  btn.disabled = true;
+  btn.textContent = 'バックアップを準備中…';
+  try {
+    const d = new Date();
+    const stamp = `${d.getFullYear()}${String(d.getMonth()+1).padStart(2,'0')}${String(d.getDate()).padStart(2,'0')}`;
+    const filename = `oshikatsu_backup_${stamp}.json`;
+    const json = JSON.stringify(state, null, 2);
+    const file = new File([json], filename, {type:'application/json'});
+    // iOS Safari: open the native share sheet so the user can choose “Save to Files” > iCloud Drive.
+    if (navigator.share && navigator.canShare && navigator.canShare({files:[file]})) {
+      await navigator.share({files:[file], title:'推し活グッズ帳バックアップ', text:'「ファイルに保存」からiCloud Driveを選んで保存してね。'});
+      showToast('共有画面を閉じたよ。iCloud Driveへの保存を確認してね');
+    } else {
+      // Fallback for browsers without file sharing. Save/download the JSON, then move it to iCloud Drive in Files.
+      const blob = new Blob([json], {type:'application/json'});
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url; a.download = filename;
+      document.body.appendChild(a); a.click(); document.body.removeChild(a);
+      setTimeout(()=>URL.revokeObjectURL(url), 1500);
+      showToast('JSONを書き出したよ。「ファイル」からiCloud Driveへ保存してね');
+    }
+  } catch (err) {
+    if (err && err.name === 'AbortError') {
+      showToast('バックアップをキャンセルしたよ');
+    } else {
+      console.error(err);
+      showToast('バックアップできなかったよ。もう一度試してね');
+    }
+  } finally {
+    btn.disabled = false;
+    btn.textContent = originalLabel;
+  }
 };
 
 
