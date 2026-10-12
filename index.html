@@ -225,24 +225,15 @@
 </head>
 <body>
 
-<!-- Sign-in screen -->
-<div class="signin-screen" id="signinScreen">
-  <div class="signin-pin">🎀</div>
-  <h1>推し活グッズ帳</h1>
-  <p>Googleアカウントでログインすると、データがクラウドに自動保存されて、他の端末でも同じコレクションをリアルタイムに見られるようになるよ。</p>
-  <button class="googlebtn" id="googleSignInBtn">
-    <svg width="18" height="18" viewBox="0 0 48 48"><path fill="#FFC107" d="M43.6 20.5H42V20H24v8h11.3c-1.6 4.7-6.1 8-11.3 8-6.6 0-12-5.4-12-12s5.4-12 12-12c3.1 0 5.8 1.1 8 3l6-6C33.6 5.1 29 3 24 3 12.4 3 3 12.4 3 24s9.4 21 21 21 21-9.4 21-21c0-1.4-.1-2.7-.4-3.5z"/><path fill="#FF3D00" d="M6.3 14.7l6.6 4.8C14.6 15.1 18.9 12 24 12c3.1 0 5.8 1.1 8 3l6-6C33.6 5.1 29 3 24 3 16.3 3 9.7 7.4 6.3 14.7z"/><path fill="#4CAF50" d="M24 45c5 0 9.5-1.9 12.9-5.1l-6-4.9c-2 1.4-4.6 2.3-6.9 2.3-5.2 0-9.6-3.3-11.3-8l-6.5 5C9.6 40.6 16.2 45 24 45z"/><path fill="#1976D2" d="M43.6 20.5H42V20H24v8h11.3c-.8 2.3-2.2 4.2-4.1 5.6l6 4.9C40.6 35.9 44 30.4 44 24c0-1.4-.1-2.7-.4-3.5z"/></svg>
-    Googleでログイン
-  </button>
-  <span class="synctag" id="signinLoadingTag" style="display:none;"><div class="spinner" style="width:12px;height:12px;border-width:2px;"></div> 接続中…</span>
-</div>
+<!-- Local-only mode: no Google sign-in or cloud sync -->
+<div class="signin-screen hidden" id="signinScreen" aria-hidden="true"></div>
 
-<div class="app hidden" id="appRoot">
+<div class="app" id="appRoot">
   <header>
     <div class="titlebar" id="titlebar">
       <h1 id="pageTitle"><span class="pin"></span>推し活グッズ帳</h1>
       <div class="headerbtns">
-        <span class="synctag"><span class="dot-live"></span>同期中</span>
+        <span class="synctag"><span class="dot-live"></span>端末内保存</span>
         <button class="menubtn" id="backupOpenBtn">⋮</button>
       </div>
     </div>
@@ -408,7 +399,7 @@
       </div>
     </div>
     <p style="font-size:13px; color:var(--ink-soft); line-height:1.6;">
-      データはGoogleアカウントに紐づけてクラウドに自動保存されてるよ。他の端末で同じアカウントでログインすれば、追加した瞬間にそのまま反映される。
+      データはこのiPhoneのブラウザ内に保存されるよ。Googleアカウントとの同期は行わないため、定期的にJSONバックアップを書き出してね。
     </p>
     <div class="backupbar">
       <button class="backupbtn" id="historyOpenBtn">🕘 変更履歴を見る</button>
@@ -425,7 +416,7 @@
       <input type="file" id="importFileInput" accept=".json,application/json">
     </div>
     <p style="font-size:11.5px; color:var(--ink-soft); line-height:1.5;">
-      JSONバックアップのキャラ・グッズをクラウドに反映するよ。同じIDのデータは更新されるため、先に念のため書き出してね。
+      JSONバックアップのキャラ・グッズをこのiPhone内に取り込むよ。同じIDのデータは更新されるため、先に念のため書き出してね。
     </p>
     <div class="backupbar">
       <button class="backupbtn" id="migrateSeriesBtn">🪄 シリーズ名を商品名へ一括変換</button>
@@ -483,38 +474,53 @@
 </div>
 
 <script type="module">
-/* =====================================================================
-   Firebase 設定：ここに自分のプロジェクトの値を入れてください
-   Firebase コンソール > プロジェクトの設定 > 全般 > マイアプリ で確認できます
-   ===================================================================== */
-const firebaseConfig = {
-  apiKey: "AIzaSyC6wAmj0-5j0vE1n-zwBwPwzMaAry4QmAI",
-  authDomain: "oshikatsu-goods.firebaseapp.com",
-  projectId: "oshikatsu-goods",
-  storageBucket: "oshikatsu-goods.firebasestorage.app",
-  messagingSenderId: "979698953003",
-  appId: "1:979698953003:web:5e363c5331d99c9eab736e"
-};
-
-/* レシート読み取り機能を使う場合はここにGemini APIキーを入れてください
-   （Google AI Studio: https://aistudio.google.com/apikey で無料取得できます）
-   使わない場合は空文字のままでOK（レシート読み取りボタンは自動で無効表示になります） */
-const GEMINI_API_KEY = "AQ.Ab8RN6JR-pU7VS_1CJp0OKZUu_LlDaPZCt6yXHMSup5_MT2zqQ";
-
-import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-import {
-  getAuth, GoogleAuthProvider, signInWithPopup, onAuthStateChanged
-} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
-import {
-  getFirestore, collection, doc, addDoc, setDoc, updateDoc, deleteDoc,
-  onSnapshot, query, getDocs, serverTimestamp
-} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
-
-const fbApp = initializeApp(firebaseConfig);
-const auth = getAuth(fbApp);
-const db = getFirestore(fbApp);
-
-let uid = null;
+/* ローカル専用データストア（IndexedDB）。Googleログイン・Firebase・Firestoreは使用しない。 */
+const GEMINI_API_KEY = ""; // 外部APIキーは埋め込まない。レシートOCRは無効。
+const db = { localOnly: true };
+const LOCAL_DB_NAME = 'oshikatsu-goods-local-v1';
+const LOCAL_DB_STORE = 'documents';
+let localDbPromise = null;
+const localListeners = new Map();
+function openLocalDb(){
+  if(!('indexedDB' in window)) return Promise.reject(new Error('このブラウザは端末内保存に対応していません'));
+  if(!localDbPromise) localDbPromise = new Promise((resolve,reject)=>{
+    const req=indexedDB.open(LOCAL_DB_NAME,1);
+    req.onupgradeneeded=()=>{const d=req.result;if(!d.objectStoreNames.contains(LOCAL_DB_STORE))d.createObjectStore(LOCAL_DB_STORE,{keyPath:'key'});};
+    req.onsuccess=()=>resolve(req.result); req.onerror=()=>reject(req.error||new Error('端末内データベースを開けません'));
+  });
+  return localDbPromise;
+}
+function collection(_db,...parts){return {kind:'collection',name:parts[parts.length-1]};}
+function doc(_db,...parts){return {kind:'document',name:parts[parts.length-2],id:parts[parts.length-1]};}
+function query(ref){return ref;}
+function serverTimestamp(){return {seconds:Math.floor(Date.now()/1000),nanoseconds:0};}
+async function readCollection(name){
+  const d=await openLocalDb();
+  return new Promise((resolve,reject)=>{const req=d.transaction(LOCAL_DB_STORE,'readonly').objectStore(LOCAL_DB_STORE).getAll();req.onsuccess=()=>resolve(req.result.filter(x=>x.collection===name).map(x=>({id:x.id,...x.data})));req.onerror=()=>reject(req.error);});
+}
+function makeSnapshot(rows){return {docs:rows.map(row=>({id:row.id,data:()=>{const {id,...data}=row;return data;}})),empty:rows.length===0,size:rows.length};}
+async function notifyLocal(name){
+  const listeners=localListeners.get(name); if(!listeners?.size)return;
+  try{const snap=makeSnapshot(await readCollection(name)); for(const cb of [...listeners])cb.next(snap);}
+  catch(err){for(const cb of [...listeners])cb.error?.(err);}
+}
+function onSnapshot(ref,next,error){
+  const name=ref.name; if(!localListeners.has(name))localListeners.set(name,new Set());
+  const listener={next,error};localListeners.get(name).add(listener);
+  notifyLocal(name);
+  return ()=>localListeners.get(name)?.delete(listener);
+}
+async function addDoc(ref,data){const id=uidGen();await writeLocal(ref.name,id,data,false);return {id};}
+async function setDoc(ref,data){await writeLocal(ref.name,ref.id,data,false);}
+async function updateDoc(ref,data){await writeLocal(ref.name,ref.id,data,true);}
+async function writeLocal(name,id,data,merge){
+  const d=await openLocalDb();
+  await new Promise((resolve,reject)=>{const tx=d.transaction(LOCAL_DB_STORE,'readwrite');const store=tx.objectStore(LOCAL_DB_STORE);const req=store.get(`${name}/${id}`);req.onsuccess=()=>{const old=req.result;store.put({key:`${name}/${id}`,collection:name,id,data:merge?{...(old?.data||{}),...data}:data});};tx.oncomplete=resolve;tx.onerror=()=>reject(tx.error||new Error('端末内への保存に失敗しました'));tx.onabort=()=>reject(tx.error||new Error('端末内への保存に失敗しました'));});
+  await notifyLocal(name);
+}
+async function deleteDoc(ref){const d=await openLocalDb();await new Promise((resolve,reject)=>{const tx=d.transaction(LOCAL_DB_STORE,'readwrite');tx.objectStore(LOCAL_DB_STORE).delete(`${ref.name}/${ref.id}`);tx.oncomplete=resolve;tx.onerror=()=>reject(tx.error);});await notifyLocal(ref.name);}
+async function getDocs(ref){return makeSnapshot(await readCollection(ref.name));}
+let uid = 'local';
 let unsubChars = null, unsubItems = null;
 
 /* ---------------- App state ---------------- */
@@ -612,7 +618,7 @@ function showToast(msg){
   if(navigator.vibrate){ try{ navigator.vibrate(10); }catch(e){} }
   setTimeout(()=>t.classList.remove('show'), 1800);
 }
-/* 画像はFirebase Storageを使わず、圧縮してFirestoreに直接保存する（無料枠のみで完結させるため） */
+/* 画像は圧縮して端末内のIndexedDBに保存する */
 function compressImageFile(file, maxDim=640, quality=0.65){
   return new Promise((resolve, reject)=>{
     const reader = new FileReader();
@@ -639,7 +645,7 @@ function compressImageFile(file, maxDim=640, quality=0.65){
 function totalImageBytes(images){
   return images.reduce((s,img)=> s + (img ? img.length : 0), 0);
 }
-const MAX_IMAGE_BYTES = 650000; // Firestoreの1ドキュメント1MB制限に対する安全マージン
+const MAX_IMAGE_BYTES = 650000; // 画像1グッズあたりの容量を抑える
 function compressDataUrl(src, maxDim=480, quality=0.62){
   return new Promise((resolve,reject)=>{
     const img=new Image();
@@ -667,38 +673,14 @@ async function optimizeImagesForSave(images){
   return result;
 }
 
-/* ---------------- Auth ---------------- */
-document.getElementById('googleSignInBtn').onclick = async ()=>{
-  document.getElementById('signinLoadingTag').style.display = 'inline-flex';
-  try{
-    const provider = new GoogleAuthProvider();
-    await signInWithPopup(auth, provider);
-  }catch(e){
-    document.getElementById('signinLoadingTag').style.display = 'none';
-    showToast('ログインに失敗したよ: ' + e.message);
-  }
-};
+/* ---------------- Local-only startup ---------------- */
+document.getElementById('signinScreen').classList.add('hidden');
+document.getElementById('appRoot').classList.remove('hidden');
+document.getElementById('fabBtn').classList.remove('hidden');
+startSync();
+pushBackGuard();
 
-onAuthStateChanged(auth, (user)=>{
-  if(user){
-    uid = user.uid;
-    document.getElementById('signinScreen').classList.add('hidden');
-    document.getElementById('appRoot').classList.remove('hidden');
-    document.getElementById('fabBtn').classList.remove('hidden');
-    startSync();
-    pushBackGuard();
-  } else {
-    uid = null;
-    if(unsubChars) unsubChars();
-    if(unsubItems) unsubItems();
-    document.getElementById('appRoot').classList.add('hidden');
-    document.getElementById('fabBtn').classList.add('hidden');
-    document.getElementById('signinScreen').classList.remove('hidden');
-    document.getElementById('signinLoadingTag').style.display = 'none';
-  }
-});
-
-/* ---------------- Realtime sync ---------------- */
+/* ---------------- Local data updates (no cloud sync) ---------------- */
 function startSync(){
   const charsCol = collection(db, 'users', uid, 'characters');
   const itemsCol = collection(db, 'users', uid, 'items');
