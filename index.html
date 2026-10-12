@@ -379,6 +379,17 @@
 <div class="overlay" id="backupOverlay">
   <div class="sheet">
     <h2>設定</h2>
+    <div style="margin:0 0 14px;padding:12px;border:2px solid var(--pink);border-radius:16px;background:var(--card);">
+      <div style="font-size:13px;font-weight:900;margin-bottom:4px;">☁️ iCloud Driveバックアップ</div>
+      <div style="font-size:11.5px;color:var(--ink-soft);line-height:1.5;margin-bottom:8px;">Google同期は使わず、このiPhone内に保存します。バックアップは手動でiCloud Driveに保存してください。</div>
+      <div class="backupbar" style="padding:0 0 5px;">
+        <button class="backupbtn" id="exportBtn">☁️ iCloud Driveにバックアップ</button>
+      </div>
+      <div class="backupbar" style="padding:0;">
+        <button class="backupbtn" id="importBtn">⬆️ JSONバックアップを取り込む</button>
+        <input type="file" id="importFileInput" accept=".json,application/json">
+      </div>
+    </div>
     <div class="field" style="margin-top:12px;">
       <label for="settingsGridCols">グッズ一覧の列数</label>
       <select id="settingsGridCols" class="sortselect" style="width:100%;">
@@ -399,7 +410,7 @@
       </div>
     </div>
     <p style="font-size:13px; color:var(--ink-soft); line-height:1.6;">
-      データはこのiPhoneのブラウザ内に保存されるよ。Googleアカウントとの同期は行わないため、定期的にJSONバックアップを書き出してね。
+      データはこのiPhoneのブラウザ内に保存されるよ。Googleアカウントとの同期は行いません。上のボタンから定期的にバックアップを保存してね。
     </p>
     <div class="backupbar">
       <button class="backupbtn" id="historyOpenBtn">🕘 変更履歴を見る</button>
@@ -408,13 +419,6 @@
     <p style="font-size:11.5px; color:var(--ink-soft); line-height:1.5;">
       登録したグッズを新しい順に一覧で見れるよ。タップすると編集画面が開く。
     </p>
-    <div class="backupbar">
-      <button class="backupbtn" id="exportBtn">☁️ iCloud Driveにバックアップ</button>
-    </div>
-    <div class="backupbar">
-      <button class="backupbtn" id="importBtn">⬆️ JSONバックアップを取り込む</button>
-      <input type="file" id="importFileInput" accept=".json,application/json">
-    </div>
     <p style="font-size:11.5px; color:var(--ink-soft); line-height:1.5;">
       バックアップボタンを押すと共有画面が開くよ。「ファイルに保存」→「iCloud Drive」を選んで保存してね。自動同期ではなく、必要なときに手動で保存する方式だよ。
     </p>
